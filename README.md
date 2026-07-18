@@ -81,7 +81,37 @@ agent-metrics roll
 ```
 
 These names are placeholders until implementation starts. The repository currently
-contains planning material only.
+contains command stubs and project tooling only.
+
+## Development
+
+Install the package with development tools:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Run the local checks:
+
+```bash
+black .
+ruff check .
+pytest
+```
+
+The test suite uses `pytest` with coverage enabled through `pyproject.toml`. Current
+tests cover the skeleton CLI: help text, version output, clear failure for unimplemented
+commands, and rejection of unknown commands.
+
+Formatting is handled by Black. Linting is handled by Ruff, including McCabe complexity
+checks, so new implementation should stay simple before it gets broad.
+
+## Development Philosophy
+
+The aim is robust, efficient, minimal tooling. Prefer existing libraries and standard
+Python tooling before adding custom machinery. Build behavior with tests first where
+practical, and cover both positive and negative cases so failures are explicit rather
+than surprising.
 
 ## Source
 
