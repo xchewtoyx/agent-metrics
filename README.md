@@ -90,3 +90,10 @@ This repository was initialized from the cross-project analysis pitch in:
 `tasks/km-cross-project-analysis/08-tool-elevator-pitch.md`
 
 from the `ado` worktree analyzed on 2026-07-18.
+
+## References
+
+- [Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses](https://arxiv.org/abs/2604.25850)
+- [Demystifying evals for AI agents](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
+- [Estimating AI productivity gains from Claude conversations](https://www.anthropic.com/research/estimating-productivity-gains)
+- [Anthropic Economic Index report: Economic primitives](https://www.anthropic.com/research/anthropic-economic-index-january-2026-report)
