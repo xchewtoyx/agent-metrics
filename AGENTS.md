@@ -16,11 +16,25 @@ and settled outcomes.
 - Keep changes small and testable. The project should remain useful before it becomes
   elaborate.
 - Align reviews with the Zen of Python: simple, explicit, readable, sparse, and
-  practical beats clever.
+  practical beats clever. Remember that design is complete not when there is nothing
+  more to add, but when there is nothing more to remove.
 - Prefer test-driven development for behavior changes.
 - Test both positive and negative cases. A command that succeeds should prove the happy
   path; a command that rejects bad input should fail clearly and usefully.
 - Optimize for maintainability before performance, then measure before tuning.
+- Leave the codebase cleaner than you found it (the Boy Scout Rule) by proactively
+  removing any imports, variables, or functions that your changes made unused.
+- Document all user-facing or behavior changes in [CHANGELOG.md](CHANGELOG.md) under the `[Unreleased]` section following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions on every pull request.
+
+## Project Layout and API Design
+
+- **Maintain the `src/` Layout:** Keep all application and library source code inside the `src/` directory. Configuration, documentation, and tests must remain strictly outside the `src/` folder to prevent import path pollution and maintain a clean packaging boundary.
+- **Thin CLI & Reusable Library API:** The CLI entrypoint (`src/agent_metrics/cli.py`) must remain a lightweight argument parsing and presentation layer. All core business logic must be implemented as clean, library-first functions inside `src/agent_metrics/` and exposed programmatically through the package root (`src/agent_metrics/__init__.py`).
+- **Mirrored Testing Structure:** All test modules must reside in the top-level `tests/` directory, matching the file layout, module structure, and naming conventions of the source package to ensure clean organization and complete coverage.
+- **Domain Modularity & Separation of Concerns:** As the library grows, divide business logic into highly cohesive, single-responsibility submodules (e.g., `src/agent_metrics/health.py`, `src/agent_metrics/contracts.py`). Avoid adding unrelated logic to existing submodules or creating monolithic files.
+- **Strict API Encapsulation:** Treat the package-level `src/agent_metrics/__init__.py` as the strict public gateway (`__all__`). Programmatic entry points, helpers, or modules not exposed in `__all__` (or prefixed with a leading underscore) are considered private/internal implementation details and can be refactored at any time.
+- **Explicit Interfaces:** Public API functions must use Python type hints, document their behavior clearly with docstrings, and return standard structures (like dictionaries, lists, or dataclasses) rather than relying on mutable global states or CLI-specific constructs.
+- **Decoupled Exception Hierarchy:** Raise custom exception classes inheriting from a base library exception (like `AgentMetricsError`) for expected domain-level validation and runtime failures. Decouple error raising from CLI presentation by letting the CLI layer map these custom exceptions to user-facing messages.
 
 ## Local Workflow
 
@@ -51,3 +65,4 @@ Reviews should ask:
 - Is there an existing library or standard tool that should be used instead?
 - Does the implementation keep evidence reproducible and provenance explicit?
 - Is the code easy to read without relying on hidden context?
+- Does this change update [CHANGELOG.md](CHANGELOG.md) in the `[Unreleased]` section using Keep a Changelog conventions?

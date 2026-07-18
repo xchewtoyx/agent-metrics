@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
 import click
 
 from agent_metrics import __version__
@@ -18,11 +21,69 @@ def main() -> None:
     "--append",
     "append",
     is_flag=True,
-    help="Append a structural health snapshot to .agent-metrics/health.jsonl.",
+    help="Append a health snapshot to .agent-metrics/health.jsonl.",
 )
-def health(append: bool) -> None:
+@click.option(
+    "--metric",
+    "-m",
+    "metrics",
+    multiple=True,
+    help="Explicit metric in KEY=VALUE format (can be specified multiple times).",
+)
+@click.option(
+    "--input-file",
+    "-i",
+    "input_file",
+    type=click.File("r"),
+    help="Path to JSON file containing metrics (use - for stdin).",
+)
+@click.argument(
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+)
+def health(
+    append: bool,
+    metrics: tuple[str, ...],
+    input_file: Any | None,
+    directory: str,
+) -> None:
     """Record objective structural health for a repository or bundle."""
-    _not_implemented("health", append=append)
+    from agent_metrics.health import (
+        AgentMetricsError,
+        capture_health,
+        parse_metrics_definitions,
+    )
+
+    try:
+        parsed_metrics = parse_metrics_definitions(metrics)
+    except ValueError as e:
+        raise click.BadParameter(str(e)) from e
+
+    try:
+        record = capture_health(
+            directory=directory,
+            metrics=parsed_metrics,
+            input_file=input_file,
+            append=append,
+            tool_version=__version__,
+        )
+        record_str = json.dumps(
+            record,
+            separators=(",", ":"),
+            sort_keys=True,
+            allow_nan=False,
+        )
+    except AgentMetricsError as e:
+        raise click.ClickException(f"Invalid metrics input: {e}") from e
+    except TypeError as e:
+        raise click.ClickException(f"Type error: {e}") from e
+    except json.JSONDecodeError as e:
+        raise click.ClickException(f"Invalid JSON in metrics input: {e}") from e
+    except ValueError as e:
+        raise click.ClickException(f"Metrics contain non-JSON values: {e}") from e
+
+    click.echo(record_str)
 
 
 @main.command()
