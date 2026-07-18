@@ -1,4 +1,4 @@
-"""Logic for structural and codebase health snapshots."""
+"""Logic for metric-agnostic health snapshots."""
 
 from __future__ import annotations
 

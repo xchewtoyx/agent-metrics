@@ -9,6 +9,7 @@ from agent_metrics.health import (
     create_health_envelope,
     get_git_metadata,
     load_metrics,
+    parse_metric_value,
     parse_metrics_definitions,
 )
 
@@ -22,5 +23,6 @@ __all__ = [
     "create_health_envelope",
     "get_git_metadata",
     "load_metrics",
+    "parse_metric_value",
     "parse_metrics_definitions",
 ]

@@ -21,7 +21,7 @@ def main() -> None:
     "--append",
     "append",
     is_flag=True,
-    help="Append a structural health snapshot to .agent-metrics/health.jsonl.",
+    help="Append a health snapshot to .agent-metrics/health.jsonl.",
 )
 @click.option(
     "--metric",
