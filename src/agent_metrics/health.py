@@ -7,6 +7,7 @@ import math
 import os
 from typing import TYPE_CHECKING
 
+from agent_metrics.errors import AgentMetricsError
 from agent_metrics.provenance import (
     DEFAULT_BUNDLE,
     STRUCTURAL_HEALTH_SCHEMA_VERSION,
@@ -15,12 +16,6 @@ from agent_metrics.provenance import (
 
 if TYPE_CHECKING:
     from typing import Any
-
-
-class AgentMetricsError(ValueError):
-    """Base exception for agent-metrics library errors."""
-
-    pass
 
 
 def build_health_envelope(

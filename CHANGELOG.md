@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured Python library API exposing `capture_health`, `load_metrics`, `parse_metric_value`, `parse_metrics_definitions`, and `AgentMetricsError` to support third-party programmatic extensions.
 
 ### Changed
+- Expanded agent guidance with a Golden Path workflow, a "Where to Look" index, and on-demand reference docs ([docs/api-conventions.md](docs/api-conventions.md) naming-verb guide and [docs/review-checklist.md](docs/review-checklist.md) review gates), keeping `AGENTS.md` lean.
+- Moved `AgentMetricsError` into a dedicated `agent_metrics.errors` module so submodules can raise the shared error without depending on `health`; it remains importable from the package root and from `agent_metrics.health`.
 - Trimmed the public API to its intended surface: renamed `create_health_envelope` to `build_health_envelope` (parallel to `build_effectiveness_envelope`), and removed the low-level `get_host`, `detect_environment`, and `classify_durability` helpers from the package root (they remain importable from `agent_metrics.provenance` as internal building blocks).
 - Structural health records now conform to the versioned provenance envelope: they include `schema_version`, `branch`, `bundle`, `host`, `environment`, and `durability`, replacing the previous boolean `durable` field.
 - Moved git metadata resolution and timestamp handling into the `provenance` module; `get_git_metadata` now also reports the current `branch`.

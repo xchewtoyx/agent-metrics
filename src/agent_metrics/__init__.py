@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from agent_metrics.errors import AgentMetricsError
 from agent_metrics.health import (
-    AgentMetricsError,
     append_health_record,
     build_health_envelope,
     capture_health,
