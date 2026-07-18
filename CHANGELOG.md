@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored CLI execution endpoints in `cli.py` to act as lightweight argument/option parsing wrappers delegating to the library API.
 - Updated agent instructions (`AGENTS.md`) with explicit project layout guidelines, modular API design principles, design simplification rules, and the Boy Scout Rule.
 
+### Fixed
+- `create_health_envelope` now suppresses `OverflowError` and `OSError` in addition to `ValueError` when parsing `SOURCE_DATE_EPOCH`, preventing crashes on out-of-range epoch values set by users or CI environments.
+
+
 ## [0.1.0] - 2026-07-18
 - Initial project skeleton containing Click CLI setup, testing harness, and development workflow parameters.
 

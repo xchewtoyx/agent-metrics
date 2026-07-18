@@ -95,7 +95,7 @@ def create_health_envelope(
     source_date_epoch = os.environ.get("SOURCE_DATE_EPOCH")
     timestamp_dt = datetime.now(UTC)
     if source_date_epoch is not None:
-        with contextlib.suppress(ValueError):
+        with contextlib.suppress(ValueError, OverflowError, OSError):
             timestamp_dt = datetime.fromtimestamp(int(source_date_epoch), tz=UTC)
     timestamp = timestamp_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 

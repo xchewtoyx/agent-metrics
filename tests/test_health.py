@@ -333,6 +333,24 @@ def test_create_health_envelope_invalid_source_date_epoch() -> None:
         assert "timestamp" in envelope
 
 
+def test_create_health_envelope_overflow_source_date_epoch() -> None:
+    """Test create_health_envelope ignores SOURCE_DATE_EPOCH causing OverflowError."""
+    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": str(2**63)}):
+        envelope = create_health_envelope({}, ".")
+        assert "timestamp" in envelope
+
+
+def test_create_health_envelope_oserror_source_date_epoch() -> None:
+    """Test create_health_envelope ignores SOURCE_DATE_EPOCH that causes OSError.
+
+    2**62 seconds is far beyond the system time_t range on 64-bit Linux and
+    raises OSError('Value too large for defined data type').
+    """
+    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": str(2**62)}):
+        envelope = create_health_envelope({}, ".")
+    assert "timestamp" in envelope
+
+
 def test_cli_health_non_json_value_in_file(tmp_path: Path) -> None:
     """CLI health handles non-JSON compliant float values from files."""
     json_file = tmp_path / "metrics.json"
