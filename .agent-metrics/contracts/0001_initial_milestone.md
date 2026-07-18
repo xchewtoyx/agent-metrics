@@ -26,7 +26,7 @@ Because of this lack of tooling, teams defaults to not writing/checking evaluati
 ## Proposed Change
 
 Design and implement the `agent-metrics` package structure and a CLI with five placeholder commands:
-1. `health` (recording structural health snapshot as append-only JSONL to `metrics/health.jsonl`).
+1. `health` (recording structural health snapshot as append-only JSONL to `.agent-metrics/health.jsonl`).
 2. `contract` (scaffolding a pre-change markdown contract prediction).
 3. `settle` (recording outcomes/verdicts).
 4. `audit` (reporting how many harness changes had contracts and settled outcomes).

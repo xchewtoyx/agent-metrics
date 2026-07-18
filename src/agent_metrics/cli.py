@@ -18,7 +18,7 @@ def main() -> None:
     "--append",
     "append",
     is_flag=True,
-    help="Append a structural health snapshot to metrics/health.jsonl.",
+    help="Append a structural health snapshot to .agent-metrics/health.jsonl.",
 )
 def health(append: bool) -> None:
     """Record objective structural health for a repository or bundle."""
