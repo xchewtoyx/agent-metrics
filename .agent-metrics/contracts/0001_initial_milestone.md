@@ -36,8 +36,8 @@ This initial work lays the foundations of the toolkit by dogfooding the process 
 
 ## Affected Component
 
-- CLI entrypoint: [cli.py](file:///home/rgh/git/gh/xchewtoyx/agent-metrics/src/agent_metrics/cli.py)
-- Package configuration: [pyproject.toml](file:///home/rgh/git/gh/xchewtoyx/agent-metrics/pyproject.toml)
+- CLI entrypoint: [cli.py](../../src/agent_metrics/cli.py)
+- Package configuration: [pyproject.toml](../../pyproject.toml)
 
 ## Predicted Fixes
 
