@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from typing import Any
+
 import click
 
 from agent_metrics import __version__
@@ -13,6 +16,41 @@ def main() -> None:
     """Measure agent and knowledge-repo changes with plain-file evidence."""
 
 
+def _parse_val(val_str: str) -> int | float | str:
+    try:
+        return int(val_str)
+    except ValueError:
+        try:
+            return float(val_str)
+        except ValueError:
+            return val_str
+
+
+def _load_input_file(input_file: Any | None) -> dict[str, Any]:
+    if input_file is None:
+        return {}
+    try:
+        file_data = json.load(input_file)
+        if not isinstance(file_data, dict):
+            raise click.ClickException("Metrics input file must be a JSON object.")
+        return file_data
+    except json.JSONDecodeError as e:
+        raise click.ClickException(f"Invalid JSON in metrics input: {e}") from e
+
+
+def _parse_metrics(metrics: tuple[str, ...]) -> dict[str, Any]:
+    parsed = {}
+    for metric in metrics:
+        if "=" not in metric:
+            raise click.BadParameter(f"Metric '{metric}' must be in KEY=VALUE format.")
+        key, val_str = metric.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise click.BadParameter("Metric key cannot be empty.")
+        parsed[key] = _parse_val(val_str.strip())
+    return parsed
+
+
 @main.command()
 @click.option(
     "--append",
@@ -20,9 +58,42 @@ def main() -> None:
     is_flag=True,
     help="Append a structural health snapshot to .agent-metrics/health.jsonl.",
 )
-def health(append: bool) -> None:
+@click.option(
+    "--metric",
+    "-m",
+    "metrics",
+    multiple=True,
+    help="Explicit metric in KEY=VALUE format (can be specified multiple times).",
+)
+@click.option(
+    "--input-file",
+    "-i",
+    "input_file",
+    type=click.File("r"),
+    help="Path to JSON file containing metrics (use - for stdin).",
+)
+@click.argument(
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+)
+def health(
+    append: bool,
+    metrics: tuple[str, ...],
+    input_file: Any | None,
+    directory: str,
+) -> None:
     """Record objective structural health for a repository or bundle."""
-    _not_implemented("health", append=append)
+    from agent_metrics.health import append_health_record, create_health_envelope
+
+    merged_metrics = _load_input_file(input_file)
+    parsed_metrics = _parse_metrics(metrics)
+    merged_metrics.update(parsed_metrics)
+
+    record = create_health_envelope(merged_metrics, directory, __version__)
+    if append:
+        append_health_record(directory, record)
+    click.echo(json.dumps(record, separators=(",", ":")))
 
 
 @main.command()
