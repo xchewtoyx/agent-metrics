@@ -12,7 +12,7 @@ here is load-bearing: it keeps the public surface predictable and prevents drift
 
 | Verb | Contract | Examples |
 | --- | --- | --- |
-| `build_*` | Assemble and return a record/envelope dict from inputs. No I/O, no persistence. | `build_provenance`, `build_health_envelope`, `build_effectiveness_envelope` |
+| `build_*` | Assemble and return a record/envelope dict. May read ambient facts (git, host, clock); does not persist. | `build_provenance`, `build_health_envelope`, `build_effectiveness_envelope` |
 | `capture_*` | High-level orchestration: gather inputs, build a record, optionally persist. | `capture_health` |
 | `get_*` | Read ambient facts from the environment. Degrade gracefully; never raise. | `get_git_metadata` |
 | `parse_*` | Convert strings / CLI input to typed Python. Raise `AgentMetricsError` on bad input. | `parse_metric_value`, `parse_metrics_definitions` |
