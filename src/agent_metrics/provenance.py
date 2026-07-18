@@ -129,8 +129,11 @@ def get_git_metadata(repo_path: str = ".") -> dict[str, Any]:
             )
             if status.returncode == 0:
                 dirty = bool(status.stdout.strip())
-    except (subprocess.SubprocessError, FileNotFoundError):
-        # Gracefully handle non-git environments.
+    except (subprocess.SubprocessError, OSError):
+        # Gracefully handle non-git, missing, or unreadable environments.
+        # OSError covers FileNotFoundError (git absent or cwd missing) as well as
+        # NotADirectoryError and PermissionError when repo_path is not a readable
+        # directory.
         pass
 
     return {

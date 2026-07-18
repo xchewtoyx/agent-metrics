@@ -88,6 +88,24 @@ def test_get_git_metadata_git_not_installed() -> None:
         assert meta["dirty"] is True
 
 
+def test_get_git_metadata_unreadable_path() -> None:
+    """Git metadata degrades gracefully when the path is not a readable dir.
+
+    NotADirectoryError and PermissionError are OSError subclasses (not
+    FileNotFoundError) that subprocess.run raises for a bad cwd; they must not
+    escape the graceful fallback.
+    """
+    for error in (NotADirectoryError("not a dir"), PermissionError("denied")):
+        with patch("subprocess.run", side_effect=error):
+            meta = get_git_metadata("/some/path")
+            assert meta == {
+                "commit": None,
+                "remote_url": None,
+                "branch": None,
+                "dirty": True,
+            }
+
+
 def test_get_git_metadata_command_failures() -> None:
     """Non-zero git subcommands leave identity fields as None."""
     with patch("subprocess.run") as mock_run:
