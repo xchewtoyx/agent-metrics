@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Refactored CLI execution endpoints in `cli.py` to act as lightweight argument/option parsing wrappers delegating to the library API.
+- Updated agent instructions (`AGENTS.md`) with explicit project layout guidelines, modular API design principles, design simplification rules, and the Boy Scout Rule.
 
 ## [0.1.0] - 2026-07-18
 - Initial project skeleton containing Click CLI setup, testing harness, and development workflow parameters.
