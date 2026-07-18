@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Versioned JSONL schemas and a shared provenance envelope in a new `provenance` module, defining the durable identity (remote URL, commit SHA, bundle) and context (branch, host, environment, durability) carried by every record.
+- Structural health (`agent-metrics/structural-health/v1`) and effectiveness (`agent-metrics/effectiveness/v1`) record schemas, with `structural_health_dedupe_key` and `effectiveness_dedupe_key` helpers and a `build_effectiveness_envelope` builder.
+- Durability classification distinguishing `durable` CI-on-clean-commit records from `advisory` local or dirty runs.
+- `--bundle`/`-b` option on `health` to name the measured bundle as part of the dedupe identity.
+- Schema and example JSONL documentation in [docs/schemas.md](docs/schemas.md).
+- Dogfooded change contract `0003_jsonl_schemas.md` under `.agent-metrics/contracts/`.
 - Metric-agnostic codebase health snapshot command `health --append` supporting standard file inputs and CLI parameter overrides.
 - Git telemetry extraction logic capturing remote URL, current commit hash, dirty workspace flag, and durability/provenance status.
 - Verification test suite covering git boundary conditions, serialization errors, and parameter parsing constraints.
@@ -15,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured Python library API exposing `capture_health`, `load_metrics`, `parse_metric_value`, `parse_metrics_definitions`, and `AgentMetricsError` to support third-party programmatic extensions.
 
 ### Changed
+- Structural health records now conform to the versioned provenance envelope: they include `schema_version`, `branch`, `bundle`, `host`, `environment`, and `durability`, replacing the previous boolean `durable` field.
+- Moved git metadata resolution and timestamp handling into the `provenance` module; `get_git_metadata` now also reports the current `branch`.
 - Refactored CLI execution endpoints in `cli.py` to act as lightweight argument/option parsing wrappers delegating to the library API.
 - Updated agent instructions (`AGENTS.md`) with explicit project layout guidelines, modular API design principles, design simplification rules, and the Boy Scout Rule.
 

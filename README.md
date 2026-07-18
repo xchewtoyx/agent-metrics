@@ -63,7 +63,9 @@ harvested later. Promote to SQLite or DuckDB only when volume demands it.
 
 Every record carries a provenance envelope keyed on the remote URL and commit SHA, not
 the local checkout path. The same bundle at the same commit should dedupe cleanly across
-hosts.
+hosts. The versioned record schemas, the provenance envelope, the durable/advisory
+distinction, and example JSONL records are documented in
+[docs/schemas.md](docs/schemas.md).
 
 ### Make Missing Evidence Visible
 

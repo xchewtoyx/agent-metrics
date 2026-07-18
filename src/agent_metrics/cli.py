@@ -8,6 +8,7 @@ from typing import Any
 import click
 
 from agent_metrics import __version__
+from agent_metrics.provenance import DEFAULT_BUNDLE
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -37,6 +38,14 @@ def main() -> None:
     type=click.File("r"),
     help="Path to JSON file containing metrics (use - for stdin).",
 )
+@click.option(
+    "--bundle",
+    "-b",
+    "bundle",
+    default=DEFAULT_BUNDLE,
+    show_default=True,
+    help="Identifier of the measured bundle; part of the dedupe identity.",
+)
 @click.argument(
     "directory",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
@@ -46,6 +55,7 @@ def health(
     append: bool,
     metrics: tuple[str, ...],
     input_file: Any | None,
+    bundle: str,
     directory: str,
 ) -> None:
     """Record objective structural health for a repository or bundle."""
@@ -67,6 +77,7 @@ def health(
             input_file=input_file,
             append=append,
             tool_version=__version__,
+            bundle=bundle,
         )
         record_str = json.dumps(
             record,
