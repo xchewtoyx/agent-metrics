@@ -1,0 +1,2 @@
+[console_scripts]
+agent-metrics = agent_metrics.cli:main

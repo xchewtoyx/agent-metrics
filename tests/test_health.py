@@ -296,3 +296,43 @@ def test_get_git_metadata_not_in_work_tree() -> None:
         assert meta["remote_url"] is None
         assert meta["dirty"] is True
         assert meta["durable"] is False
+
+
+def test_cli_health_infinite_floats() -> None:
+    """CLI health rejects non-finite floats like NaN and Infinity."""
+    result1 = CliRunner().invoke(main, ["health", "--metric", "val=NaN"])
+    assert result1.exit_code != 0
+    assert "must be a finite number" in result1.output
+
+    result2 = CliRunner().invoke(main, ["health", "--metric", "val=Infinity"])
+    assert result2.exit_code != 0
+    assert "must be a finite number" in result2.output
+
+    result3 = CliRunner().invoke(main, ["health", "--metric", "val=1e309"])
+    assert result3.exit_code != 0
+    assert "must be a finite number" in result3.output
+
+
+def test_create_health_envelope_source_date_epoch() -> None:
+    """Test create_health_envelope honors SOURCE_DATE_EPOCH."""
+    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "1234567890"}):
+        envelope = create_health_envelope({}, ".")
+        assert envelope["timestamp"] == "2009-02-13T23:31:30Z"
+
+
+def test_create_health_envelope_invalid_source_date_epoch() -> None:
+    """Test create_health_envelope ignores invalid SOURCE_DATE_EPOCH."""
+    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "invalid"}):
+        envelope = create_health_envelope({}, ".")
+        # Should not crash and should produce a valid timestamp
+        assert "timestamp" in envelope
+
+
+def test_cli_health_non_json_value_in_file(tmp_path: Path) -> None:
+    """CLI health handles non-JSON compliant float values from files."""
+    json_file = tmp_path / "metrics.json"
+    json_file.write_text('{"tests": NaN}')
+
+    result = CliRunner().invoke(main, ["health", "--input-file", str(json_file)])
+    assert result.exit_code != 0
+    assert "Metrics contain non-JSON values" in result.output

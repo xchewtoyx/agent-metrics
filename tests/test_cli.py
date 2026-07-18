@@ -24,7 +24,7 @@ def test_version_uses_project_name() -> None:
 @pytest.mark.parametrize("command", ["contract", "settle", "audit", "roll"])
 def test_skeleton_command_fails_clearly(command: str) -> None:
     """Negative case: command stubs must fail honestly until implemented."""
-    args = [command, "--append"] if command == "health" else [command]
+    args = [command]
 
     result = CliRunner().invoke(main, args)
 

@@ -17,11 +17,18 @@ def main() -> None:
 
 
 def _parse_val(val_str: str) -> int | float | str:
+    import math
+
     try:
         return int(val_str)
     except ValueError:
         try:
-            return float(val_str)
+            value = float(val_str)
+            if not math.isfinite(value):
+                raise click.BadParameter(
+                    f"Metric value '{val_str}' must be a finite number."
+                )
+            return value
         except ValueError:
             return val_str
 
@@ -91,9 +98,19 @@ def health(
     merged_metrics.update(parsed_metrics)
 
     record = create_health_envelope(merged_metrics, directory, __version__)
+    try:
+        record_str = json.dumps(
+            record,
+            separators=(",", ":"),
+            sort_keys=True,
+            allow_nan=False,
+        )
+    except ValueError as e:
+        raise click.ClickException(f"Metrics contain non-JSON values: {e}") from e
+
     if append:
         append_health_record(directory, record)
-    click.echo(json.dumps(record, separators=(",", ":")))
+    click.echo(record_str)
 
 
 @main.command()

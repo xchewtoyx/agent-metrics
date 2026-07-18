@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
@@ -83,7 +84,13 @@ def create_health_envelope(
 ) -> dict[str, Any]:
     """Wraps user metrics in a git envelope with a current timestamp."""
     git_meta = get_git_metadata(directory)
-    timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    source_date_epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    timestamp_dt = datetime.now(UTC)
+    if source_date_epoch is not None:
+        with contextlib.suppress(ValueError):
+            timestamp_dt = datetime.fromtimestamp(int(source_date_epoch), tz=UTC)
+    timestamp = timestamp_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     return {
         "timestamp": timestamp,
@@ -106,6 +113,14 @@ def append_health_record(directory: str, record: dict[str, Any]) -> str:
     file_path = os.path.join(target_dir, "health.jsonl")
 
     with open(file_path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record, separators=(",", ":")) + "\n")
+        f.write(
+            json.dumps(
+                record,
+                separators=(",", ":"),
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+        )
 
     return file_path
