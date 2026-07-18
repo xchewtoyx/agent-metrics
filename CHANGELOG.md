@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Release flow modeled on `okf-core`: a `publish` workflow and PEP 503 index generator (`.github/scripts/gen_index.py`) that build on GitHub Release, upload artifacts, and deploy a self-hosted simple index to GitHub Pages, with install instructions in the README and the process documented in [docs/releasing.md](docs/releasing.md).
+- Documented version bump policies: a SemVer policy for the package (`tool_version`) in [docs/releasing.md](docs/releasing.md), and a per-record-type schema-versioning and consumer-compatibility policy for `schema_version` in [docs/schemas.md](docs/schemas.md), including how the two evolve independently.
+- Dogfooded change contract `0006_release_flow_and_bump_policy.md` under `.agent-metrics/contracts/`.
 - OpenTelemetry alignment for the JSONL schemas: a `to_otel_attributes` export helper mapping records onto `vcs.*`, `gen_ai.*`, `host.*`, and `service.*` semantic conventions, a reserved `agent_metrics.*` namespace (`AGENT_METRICS_NAMESPACE`) for concepts OTel does not cover, and an optional `correlation_id` envelope field (also exposed as `health --correlation-id`) mapping to `gen_ai.conversation.id`.
 - Versioned JSONL schemas and a shared provenance envelope in a new `provenance` module, defining the durable identity (remote URL, commit SHA, bundle) and context (branch, host, environment, durability) carried by every record.
 - Structural health (`agent-metrics/structural-health/v1`) and effectiveness (`agent-metrics/effectiveness/v1`) record schemas, with `structural_health_dedupe_key` and `effectiveness_dedupe_key` helpers and a `build_effectiveness_envelope` builder.

@@ -7,9 +7,50 @@ measured at the same commit deduplicates cleanly across local checkouts, hosts,
 branches, and CI runs.
 
 Records are versioned. The `schema_version` field names the record shape so
-consumers can evolve their handling as schemas change. Bump the trailing version
-(`.../v1` → `.../v2`) whenever a record's shape changes in a way consumers must
-distinguish.
+consumers can evolve their handling as schemas change. See the bump and
+compatibility policy below.
+
+## Schema versioning and compatibility
+
+`schema_version` is a namespaced identifier with a trailing major version, e.g.
+`agent-metrics/structural-health/v1`. Each record type is versioned
+**independently** — structural health and effectiveness carry their own
+`schema_version` and bump on their own clock.
+
+### When to bump
+
+Bump the trailing version (`.../v1` → `.../v2`) when a record's shape changes in
+a way a consumer must distinguish:
+
+- Removing or renaming a field.
+- Changing a field's type or the meaning of its value.
+- Changing the deduplication key or identity semantics.
+
+Do **not** bump for backward-compatible additions — most importantly a new
+**optional** field (the way `correlation_id` was added to `v1`). Additive
+optional fields do not change how existing consumers read a record.
+
+### Consumer compatibility contract
+
+To make additive changes safe without a version bump, consumers must:
+
+- **Ignore unknown fields.** A record may contain fields a consumer does not
+  recognize; they must be tolerated, not rejected.
+- **Tolerate missing optional fields.** An optional field (for example
+  `correlation_id`) may be absent; treat absence as "unset".
+
+A `schema_version` change is therefore a deliberate signal that these guarantees
+no longer hold and the consumer must branch on the version.
+
+### Independence from `tool_version`
+
+`schema_version` is not tied to the package version. A package release
+(`tool_version` bump) never changes `schema_version`, and a schema change never
+requires a particular package version. Because dedupe keys include
+`schema_version` but never `tool_version`, a package release never fractures a
+dedupe series and a schema bump intentionally starts a new one. See
+[releasing.md](releasing.md#relationship-to-schema_version) for the package
+versioning policy.
 
 ## Provenance envelope
 

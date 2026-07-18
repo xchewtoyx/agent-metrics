@@ -87,6 +87,7 @@ and is loaded on demand:
 - [docs/schemas.md](docs/schemas.md) — JSONL schemas, provenance envelope, and OpenTelemetry mapping.
 - [docs/api-conventions.md](docs/api-conventions.md) — naming verbs and public-API rules.
 - [docs/review-checklist.md](docs/review-checklist.md) — repo-specific review gates.
+- [docs/releasing.md](docs/releasing.md) — versioning policy and the tag/release/publish flow.
 - `.agent-metrics/contracts/` — change contracts and their settle records.
 
 When adding guidance, prefer a new or existing `docs/` page linked here over
