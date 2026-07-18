@@ -23,7 +23,7 @@ class AgentMetricsError(ValueError):
     pass
 
 
-def create_health_envelope(
+def build_health_envelope(
     metrics: dict[str, Any],
     directory: str = ".",
     tool_version: str = "0.1.0",
@@ -143,7 +143,7 @@ def capture_health(
     if metrics is not None:
         merged_metrics.update(metrics)
 
-    record = create_health_envelope(
+    record = build_health_envelope(
         merged_metrics, directory, tool_version, bundle, correlation_id
     )
 

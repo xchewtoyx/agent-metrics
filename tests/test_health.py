@@ -13,8 +13,8 @@ from agent_metrics.cli import main
 from agent_metrics.health import (
     AgentMetricsError,
     append_health_record,
+    build_health_envelope,
     capture_health,
-    create_health_envelope,
     load_metrics,
     parse_metric_value,
     parse_metrics_definitions,
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 
-def test_create_health_envelope() -> None:
+def test_build_health_envelope() -> None:
     """Structural health records wrap metrics in the provenance envelope."""
     provenance = {
         "schema_version": STRUCTURAL_HEALTH_SCHEMA_VERSION,
@@ -44,7 +44,7 @@ def test_create_health_envelope() -> None:
         "agent_metrics.health.build_provenance", return_value=dict(provenance)
     ) as mock_build:
         metrics = {"tests": 10, "coverage": 95.5, "status": "ok"}
-        envelope = create_health_envelope(metrics, ".", "0.2.0", "okf-core")
+        envelope = build_health_envelope(metrics, ".", "0.2.0", "okf-core")
 
     mock_build.assert_called_once_with(
         STRUCTURAL_HEALTH_SCHEMA_VERSION,

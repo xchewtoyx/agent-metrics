@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Durability classification distinguishing `durable` CI-on-clean-commit records from `advisory` local or dirty runs.
 - `--bundle`/`-b` option on `health` to name the measured bundle as part of the dedupe identity.
 - Schema and example JSONL documentation in [docs/schemas.md](docs/schemas.md).
-- Dogfooded change contract `0003_jsonl_schemas.md` under `.agent-metrics/contracts/`.
+- Dogfooded change contracts `0003_jsonl_schemas.md`, `0004_otel_alignment.md`, and `0005_api_surface_cleanup.md` under `.agent-metrics/contracts/`.
 - Metric-agnostic codebase health snapshot command `health --append` supporting standard file inputs and CLI parameter overrides.
 - Git telemetry extraction logic capturing remote URL, current commit hash, dirty workspace flag, and durability/provenance status.
 - Verification test suite covering git boundary conditions, serialization errors, and parameter parsing constraints.
@@ -22,13 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Structured Python library API exposing `capture_health`, `load_metrics`, `parse_metric_value`, `parse_metrics_definitions`, and `AgentMetricsError` to support third-party programmatic extensions.
 
 ### Changed
+- Trimmed the public API to its intended surface: renamed `create_health_envelope` to `build_health_envelope` (parallel to `build_effectiveness_envelope`), and removed the low-level `get_host`, `detect_environment`, and `classify_durability` helpers from the package root (they remain importable from `agent_metrics.provenance` as internal building blocks).
 - Structural health records now conform to the versioned provenance envelope: they include `schema_version`, `branch`, `bundle`, `host`, `environment`, and `durability`, replacing the previous boolean `durable` field.
 - Moved git metadata resolution and timestamp handling into the `provenance` module; `get_git_metadata` now also reports the current `branch`.
 - Refactored CLI execution endpoints in `cli.py` to act as lightweight argument/option parsing wrappers delegating to the library API.
 - Updated agent instructions (`AGENTS.md`) with explicit project layout guidelines, modular API design principles, design simplification rules, and the Boy Scout Rule.
 
 ### Fixed
-- `create_health_envelope` now suppresses `OverflowError` and `OSError` in addition to `ValueError` when parsing `SOURCE_DATE_EPOCH`, preventing crashes on out-of-range epoch values set by users or CI environments.
+- Timestamp resolution (`resolve_timestamp`) suppresses `OverflowError` and `OSError` in addition to `ValueError` when parsing `SOURCE_DATE_EPOCH`, preventing crashes on out-of-range epoch values set by users or CI environments.
 
 
 ## [0.1.0] - 2026-07-18
