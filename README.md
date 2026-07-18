@@ -1,8 +1,8 @@
 # agent-metrics
 
 `agent-metrics` is a lightweight, serverless metrics toolkit for agent and knowledge repos.
-Its first CLI is expected to be `ahekit`: a tiny helper that turns changes to an agent
-harness or knowledge base into falsifiable, evidence-settled contracts.
+Its first CLI turns changes to an agent harness or knowledge base into falsifiable,
+evidence-settled contracts.
 
 The project exists because several sibling agent repos independently built the same
 evaluation scaffolding: change contracts, A/B replays, outcome rubrics, and harness
@@ -34,10 +34,10 @@ enough to audit.
 
 The first milestone is deliberately small:
 
-1. `ahekit health --append` records structural health as append-only JSONL.
-2. `ahekit contract` scaffolds a one-file pre-change prediction.
-3. `ahekit settle` records the outcome and verdict for a contract.
-4. `ahekit audit` reports how many harness changes had contracts and settled outcomes.
+1. `agent-metrics health --append` records structural health as append-only JSONL.
+2. `agent-metrics contract` scaffolds a one-file pre-change prediction.
+3. `agent-metrics settle` records the outcome and verdict for a contract.
+4. `agent-metrics audit` reports how many harness changes had contracts and settled outcomes.
 5. Session-end or CI checks run health snapshots in the first adopter repos.
 
 The project should dogfood its own rule: building this toolkit is itself a harness
@@ -73,11 +73,11 @@ contracts or outcomes, `audit` should make that visible.
 ## Expected Commands
 
 ```text
-ahekit health --append
-ahekit contract
-ahekit settle
-ahekit audit
-ahekit roll
+agent-metrics health --append
+agent-metrics contract
+agent-metrics settle
+agent-metrics audit
+agent-metrics roll
 ```
 
 These names are placeholders until implementation starts. The repository currently
