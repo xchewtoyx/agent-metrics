@@ -10,6 +10,20 @@ experiment protocols. The scaffolding captured predictions, but rarely closed th
 with measured outcomes. `agent-metrics` keeps that loop cheap enough to run and visible
 enough to audit.
 
+## Installation
+
+`agent-metrics` is distributed as a self-hosted PEP 503 simple index on GitHub
+Pages, not on PyPI:
+
+```bash
+pip install agent-metrics \
+  --index-url https://xchewtoyx.github.io/agent-metrics/simple/ \
+  --extra-index-url https://pypi.org/simple/
+```
+
+See [docs/releasing.md](docs/releasing.md) for the versioning policy and the
+tag-and-release flow.
+
 ## Goals
 
 - Record objective structural health snapshots for markdown and OKF-style knowledge
@@ -63,7 +77,9 @@ harvested later. Promote to SQLite or DuckDB only when volume demands it.
 
 Every record carries a provenance envelope keyed on the remote URL and commit SHA, not
 the local checkout path. The same bundle at the same commit should dedupe cleanly across
-hosts.
+hosts. The versioned record schemas, the provenance envelope, the durable/advisory
+distinction, and example JSONL records are documented in
+[docs/schemas.md](docs/schemas.md).
 
 ### Make Missing Evidence Visible
 

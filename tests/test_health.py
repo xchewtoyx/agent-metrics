@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -14,103 +13,52 @@ from agent_metrics.cli import main
 from agent_metrics.health import (
     AgentMetricsError,
     append_health_record,
+    build_health_envelope,
     capture_health,
-    create_health_envelope,
-    get_git_metadata,
     load_metrics,
     parse_metric_value,
     parse_metrics_definitions,
 )
+from agent_metrics.provenance import STRUCTURAL_HEALTH_SCHEMA_VERSION
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 
-def test_get_git_metadata_success() -> None:
-    """Test git metadata extraction when git commands succeed."""
-    with patch("subprocess.run") as mock_run:
-        # Mock git responses
-        # 1. is-inside-work-tree -> "true"
-        # 2. HEAD commit -> "abcd123"
-        # 3. Remote origin -> "https://github.com/foo/bar.git"
-        # 4. Git status -> "M file.py" (dirty)
-        mock_run.side_effect = [
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="true\n"),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="abcd123\n"),
-            subprocess.CompletedProcess(
-                args=[], returncode=0, stdout="https://github.com/foo/bar.git\n"
-            ),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="M file.py\n"),
-        ]
-
-        meta = get_git_metadata(".")
-        assert meta["commit"] == "abcd123"
-        assert meta["remote_url"] == "https://github.com/foo/bar.git"
-        assert meta["dirty"] is True
-        assert meta["durable"] is False
-
-
-def test_get_git_metadata_clean() -> None:
-    """Test git metadata extraction when worktree is clean."""
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = [
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="true\n"),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="abcd123\n"),
-            subprocess.CompletedProcess(
-                args=[], returncode=0, stdout="https://github.com/foo/bar.git\n"
-            ),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout=""),
-        ]
-
-        meta = get_git_metadata(".")
-        assert meta["dirty"] is False
-        assert meta["durable"] is True
-
-
-def test_get_git_metadata_failures() -> None:
-    """Test git metadata behaves gracefully on subprocess or command failures."""
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = subprocess.SubprocessError("git error")
-
-        meta = get_git_metadata(".")
-        assert meta["commit"] is None
-        assert meta["remote_url"] is None
-        assert meta["dirty"] is True
-        assert meta["durable"] is False
-
-
-def test_get_git_metadata_filenotfound() -> None:
-    """Test git metadata behaves gracefully when git is not installed."""
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = FileNotFoundError("git not found")
-
-        meta = get_git_metadata(".")
-        assert meta["commit"] is None
-        assert meta["remote_url"] is None
-        assert meta["dirty"] is True
-        assert meta["durable"] is False
-
-
-def test_create_health_envelope() -> None:
-    """Test the envelope structure and key types."""
-    with patch("agent_metrics.health.get_git_metadata") as mock_git:
-        mock_git.return_value = {
-            "commit": "123456",
-            "remote_url": "https://remote.git",
-            "dirty": False,
-            "durable": True,
-        }
-
+def test_build_health_envelope() -> None:
+    """Structural health records wrap metrics in the provenance envelope."""
+    provenance = {
+        "schema_version": STRUCTURAL_HEALTH_SCHEMA_VERSION,
+        "remote_url": "https://remote.git",
+        "commit": "123456",
+        "branch": "main",
+        "dirty": False,
+        "bundle": "okf-core",
+        "host": "ci-runner",
+        "environment": "ci",
+        "durability": "durable",
+        "timestamp": "2026-07-18T00:00:00Z",
+        "tool_version": "0.2.0",
+    }
+    with patch(
+        "agent_metrics.health.build_provenance", return_value=dict(provenance)
+    ) as mock_build:
         metrics = {"tests": 10, "coverage": 95.5, "status": "ok"}
-        envelope = create_health_envelope(metrics, ".", "0.2.0")
+        envelope = build_health_envelope(metrics, ".", "0.2.0", "okf-core")
 
-        assert "timestamp" in envelope
-        assert envelope["commit"] == "123456"
-        assert envelope["remote_url"] == "https://remote.git"
-        assert envelope["dirty"] is False
-        assert envelope["durable"] is True
-        assert envelope["tool_version"] == "0.2.0"
-        assert envelope["metrics"] == metrics
+    mock_build.assert_called_once_with(
+        STRUCTURAL_HEALTH_SCHEMA_VERSION,
+        bundle="okf-core",
+        directory=".",
+        tool_version="0.2.0",
+        correlation_id=None,
+    )
+    assert envelope["schema_version"] == STRUCTURAL_HEALTH_SCHEMA_VERSION
+    assert envelope["commit"] == "123456"
+    assert envelope["branch"] == "main"
+    assert envelope["bundle"] == "okf-core"
+    assert envelope["durability"] == "durable"
+    assert envelope["metrics"] == metrics
 
 
 def test_append_health_record(tmp_path: Path) -> None:
@@ -271,36 +219,32 @@ def test_cli_health_append(tmp_path: Path) -> None:
     assert record["metrics"] == {"tests": 5}
 
 
-def test_get_git_metadata_command_failures() -> None:
-    """Test git metadata when git commands return non-zero codes."""
-    with patch("subprocess.run") as mock_run:
-        # Mock git responses where commands fail (returncode = 1)
-        mock_run.side_effect = [
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="true\n"),
-            subprocess.CompletedProcess(args=[], returncode=1, stdout=""),
-            subprocess.CompletedProcess(args=[], returncode=1, stdout=""),
-            subprocess.CompletedProcess(args=[], returncode=1, stdout=""),
-        ]
+def test_cli_health_bundle_and_schema(tmp_path: Path) -> None:
+    """CLI health records the bundle identifier and structural health schema."""
+    result = CliRunner().invoke(
+        main,
+        ["health", "--bundle", "okf-core", "--metric", "tests=5", str(tmp_path)],
+    )
+    assert result.exit_code == 0
 
-        meta = get_git_metadata(".")
-        assert meta["commit"] is None
-        assert meta["remote_url"] is None
-        assert meta["dirty"] is True
-        assert meta["durable"] is False
+    data = json.loads(result.output)
+    assert data["bundle"] == "okf-core"
+    assert data["schema_version"] == STRUCTURAL_HEALTH_SCHEMA_VERSION
+    assert "branch" in data
+    assert "host" in data
+    assert "durability" in data
+    # correlation_id is optional and absent unless requested.
+    assert "correlation_id" not in data
 
 
-def test_get_git_metadata_not_in_work_tree() -> None:
-    """Test git metadata extraction when inside a non-work tree."""
-    with patch("subprocess.run") as mock_run:
-        mock_run.side_effect = [
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="false\n"),
-        ]
-
-        meta = get_git_metadata(".")
-        assert meta["commit"] is None
-        assert meta["remote_url"] is None
-        assert meta["dirty"] is True
-        assert meta["durable"] is False
+def test_cli_health_correlation_id(tmp_path: Path) -> None:
+    """CLI health records a correlation id only when supplied."""
+    result = CliRunner().invoke(
+        main,
+        ["health", "--correlation-id", "session-42", str(tmp_path)],
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.output)["correlation_id"] == "session-42"
 
 
 def test_cli_health_infinite_floats() -> None:
@@ -316,39 +260,6 @@ def test_cli_health_infinite_floats() -> None:
     result3 = CliRunner().invoke(main, ["health", "--metric", "val=1e309"])
     assert result3.exit_code != 0
     assert "must be a finite number" in result3.output
-
-
-def test_create_health_envelope_source_date_epoch() -> None:
-    """Test create_health_envelope honors SOURCE_DATE_EPOCH."""
-    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "1234567890"}):
-        envelope = create_health_envelope({}, ".")
-        assert envelope["timestamp"] == "2009-02-13T23:31:30Z"
-
-
-def test_create_health_envelope_invalid_source_date_epoch() -> None:
-    """Test create_health_envelope ignores invalid SOURCE_DATE_EPOCH."""
-    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": "invalid"}):
-        envelope = create_health_envelope({}, ".")
-        # Should not crash and should produce a valid timestamp
-        assert "timestamp" in envelope
-
-
-def test_create_health_envelope_overflow_source_date_epoch() -> None:
-    """Test create_health_envelope ignores SOURCE_DATE_EPOCH causing OverflowError."""
-    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": str(2**63)}):
-        envelope = create_health_envelope({}, ".")
-        assert "timestamp" in envelope
-
-
-def test_create_health_envelope_oserror_source_date_epoch() -> None:
-    """Test create_health_envelope ignores SOURCE_DATE_EPOCH that causes OSError.
-
-    2**62 seconds is far beyond the system time_t range on 64-bit Linux and
-    raises OSError('Value too large for defined data type').
-    """
-    with patch.dict(os.environ, {"SOURCE_DATE_EPOCH": str(2**62)}):
-        envelope = create_health_envelope({}, ".")
-    assert "timestamp" in envelope
 
 
 def test_cli_health_non_json_value_in_file(tmp_path: Path) -> None:

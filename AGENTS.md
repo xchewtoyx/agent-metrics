@@ -26,6 +26,16 @@ and settled outcomes.
   removing any imports, variables, or functions that your changes made unused.
 - Document all user-facing or behavior changes in [CHANGELOG.md](CHANGELOG.md) under the `[Unreleased]` section following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions on every pull request.
 
+## Golden Path for a Change
+
+For a load-bearing harness or knowledge change, follow this loop:
+
+1. **Contract first.** Scaffold a prediction in `.agent-metrics/contracts/NNNN_slug.md` (observed failure, root cause, proposed change, predicted fixes, risks, verification, settle criteria) before load-bearing edits. Pure docs or trivial refactors can skip this.
+2. **Library-first.** Put logic in a focused module under `src/agent_metrics/`, keep `cli.py` thin, and expose through `__all__` only what consumers call. Follow the naming verbs in [docs/api-conventions.md](docs/api-conventions.md).
+3. **Records through provenance.** Every JSONL record uses the provenance envelope with a versioned `schema_version`; dedupe by commit, and map to OpenTelemetry only at the export boundary. See [docs/schemas.md](docs/schemas.md).
+4. **Verify.** Cover positive and negative cases, run `black`/`ruff`/`pytest`, and update `CHANGELOG.md`.
+5. **Settle.** Record the outcome and verdict against the contract's settle criteria.
+
 ## Project Layout and API Design
 
 - **Maintain the `src/` Layout:** Keep all application and library source code inside the `src/` directory. Configuration, documentation, and tests must remain strictly outside the `src/` folder to prevent import path pollution and maintain a clean packaging boundary.
@@ -66,3 +76,19 @@ Reviews should ask:
 - Does the implementation keep evidence reproducible and provenance explicit?
 - Is the code easy to read without relying on hidden context?
 - Does this change update [CHANGELOG.md](CHANGELOG.md) in the `[Unreleased]` section using Keep a Changelog conventions?
+
+Apply the repo-specific gates in [docs/review-checklist.md](docs/review-checklist.md).
+
+## Where to Look
+
+Keep this file lean — it is always in context. Detailed reference lives in `docs/`
+and is loaded on demand:
+
+- [docs/schemas.md](docs/schemas.md) — JSONL schemas, provenance envelope, and OpenTelemetry mapping.
+- [docs/api-conventions.md](docs/api-conventions.md) — naming verbs and public-API rules.
+- [docs/review-checklist.md](docs/review-checklist.md) — repo-specific review gates.
+- [docs/releasing.md](docs/releasing.md) — versioning policy and the tag/release/publish flow.
+- `.agent-metrics/contracts/` — change contracts and their settle records.
+
+When adding guidance, prefer a new or existing `docs/` page linked here over
+growing this file.
