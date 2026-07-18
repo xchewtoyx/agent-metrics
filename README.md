@@ -88,8 +88,13 @@ contains command stubs and project tooling only.
 Install the package with development tools:
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
+
+Prefer a project-local virtual environment at `.venv/` when developing locally. The
+path is ignored by Git.
 
 Run the local checks:
 

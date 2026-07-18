@@ -24,6 +24,14 @@ and settled outcomes.
 
 ## Local Workflow
 
+Prefer creating a project-local virtual environment at `.venv/`:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev]"
+```
+
 Run these checks before publishing changes:
 
 ```bash
