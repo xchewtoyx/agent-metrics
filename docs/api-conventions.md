@@ -45,6 +45,15 @@ over inventing a one-off name.
   user-facing messages; library functions do not print or exit.
 - Keep the CLI (`cli.py`) a thin argument/option parsing and presentation layer.
   All logic lives in library modules.
+- A function that documents graceful degradation (typically a `get_*`) catches
+  the **base** exception (e.g. `OSError`), not hand-picked subclasses, so new
+  failure modes stay handled. Pin the guarantee with a test over the family (see
+  [test_invariants.py](../tests/test_invariants.py)), not one instance.
+- Defaults that represent a derived or shared fact — version, host, timestamp —
+  resolve from a single helper (parameter default `None`), never a per-signature
+  literal, so they cannot drift between call sites (e.g. `tool_version`).
+- Docstrings and CLI help describe what the code does *now*, not what it aspires
+  to. When you rename or repurpose a symbol, update its references in `docs/`.
 
 ## Records and provenance
 

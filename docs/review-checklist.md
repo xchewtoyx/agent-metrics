@@ -11,6 +11,9 @@ skill. Load this when reviewing a diff or preparing one for review.
       Pure docs or trivial refactors do not.
 - [ ] **CHANGELOG updated.** User- or contributor-facing changes are recorded
       under `[Unreleased]` using Keep a Changelog conventions.
+- [ ] **Prose describes current behavior, not aspirations.** Docstrings, CLI help,
+      and docs do not overclaim (e.g. "no I/O" on a function that reads git/env,
+      or "structural" on a metric-agnostic recorder).
 
 ## Schema and provenance
 
@@ -30,10 +33,19 @@ skill. Load this when reviewing a diff or preparing one for review.
       beside the `build_*` family).
 - [ ] **Errors are decoupled from presentation.** Library code raises
       `AgentMetricsError`; only the CLI maps errors to user-facing messages.
+- [ ] **Renamed a public symbol?** Grep `docs/`, `README.md`, and `CHANGELOG.md`
+      for the old name (change contracts are point-in-time records — excluded).
 
 ## Tests and checks
 
+- [ ] **Documented guarantees are asserted, not just executed.** "Never raises" /
+      graceful degradation, determinism, single-source version, and the documented
+      record shape each have a test that pins the guarantee. **100% line coverage
+      is necessary but not the bar** — every defect found in review so far shipped
+      with full coverage. See [test_invariants.py](../tests/test_invariants.py).
+- [ ] **Robustness is tested across the failure family.** A function that
+      documents graceful degradation catches the base exception (e.g. `OSError`),
+      not hand-picked subclasses, and a test exercises the family, not one instance.
 - [ ] **Positive and negative cases covered.** Success proves the happy path; bad
       input fails clearly and is asserted.
-- [ ] **Coverage stays complete.** New code is exercised; the suite runs green.
 - [ ] **`black`, `ruff`, and `pytest` pass.**
