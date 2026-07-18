@@ -18,8 +18,17 @@ from pathlib import Path
 import pytest
 
 import agent_metrics as am
-from agent_metrics import cli, errors, health, provenance
+from agent_metrics import (
+    EFFECTIVENESS_SCHEMA_VERSION,
+    STRUCTURAL_HEALTH_SCHEMA_VERSION,
+    cli,
+    errors,
+    health,
+    provenance,
+)
 from agent_metrics.provenance import get_git_metadata
+
+_SCHEMA_VERSIONS = {STRUCTURAL_HEALTH_SCHEMA_VERSION, EFFECTIVENESS_SCHEMA_VERSION}
 
 # Provenance fields documented in docs/schemas.md as present on every record.
 _DOCUMENTED_ENVELOPE_FIELDS = {
@@ -124,3 +133,64 @@ def test_api_convention_examples_reference_real_symbols() -> None:
     assert tokens, "no symbols extracted from api-conventions.md — format changed?"
     unknown = [tok for tok in tokens if not any(hasattr(ns, tok) for ns in namespaces)]
     assert not unknown, f"docs reference unknown symbols: {sorted(unknown)}"
+
+
+def test_documented_public_verbs_are_exported() -> None:
+    """Public verbs in the api-conventions table are in ``__all__``.
+
+    Catches a documented public function silently falling out of the export
+    surface (as a CHANGELOG-claimed export once did). Rows explicitly marked as
+    internal (they mention ``__all__``) are excluded.
+    """
+    text = (_DOC_ROOT / "api-conventions.md").read_text(encoding="utf-8")
+    public_tokens = {
+        tok
+        for line in text.splitlines()
+        if line.lstrip().startswith("|") and "__all__" not in line
+        for tok in re.findall(r"`([a-z_][a-z0-9_]+)`", line)
+    }
+    assert public_tokens, "no public verbs extracted — table format changed?"
+    not_exported = sorted(t for t in public_tokens if t not in am.__all__)
+    assert (
+        not not_exported
+    ), f"documented public verbs missing from __all__: {not_exported}"
+
+
+def test_schema_doc_examples_are_valid_records() -> None:
+    """Every ```jsonl example in schemas.md is a valid, in-shape record.
+
+    Executes the documented examples so they cannot drift from the schema: each
+    line is strict JSON, carries the documented envelope fields, and names a real
+    schema version.
+    """
+    text = (_DOC_ROOT / "schemas.md").read_text(encoding="utf-8")
+    blocks = re.findall(r"```jsonl\n(.*?)```", text, re.DOTALL)
+    assert blocks, "no ```jsonl examples found in schemas.md"
+    lines = [ln for block in blocks for ln in block.splitlines() if ln.strip()]
+    assert lines, "no example records found in schemas.md"
+    for line in lines:
+        record = json.loads(line)
+        assert isinstance(record, dict)
+        assert set(record) >= _DOCUMENTED_ENVELOPE_FIELDS
+        assert record["schema_version"] in _SCHEMA_VERSIONS
+        # Strict, deterministic JSON round-trips (no NaN/Infinity).
+        assert json.loads(json.dumps(record, sort_keys=True, allow_nan=False)) == record
+
+
+def test_no_hardcoded_version_literal_in_src() -> None:
+    """No ``X.Y.Z`` string literal lives in ``src/`` — versions come from metadata.
+
+    Guards the single-source-of-truth rule against a reintroduced hard-coded
+    version default.
+    """
+    src = Path(__file__).resolve().parent.parent / "src" / "agent_metrics"
+    pattern = re.compile(r"""["']\d+\.\d+\.\d+["']""")
+    offenders = [
+        f"{py.relative_to(src)}:{i}: {line.strip()}"
+        for py in src.rglob("*.py")
+        for i, line in enumerate(py.read_text(encoding="utf-8").splitlines(), 1)
+        if pattern.search(line)
+    ]
+    assert not offenders, "hard-coded version literal(s) in src: " + "; ".join(
+        offenders
+    )

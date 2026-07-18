@@ -4,6 +4,10 @@ Repo-specific gates to apply when reviewing (or self-reviewing) a change, on top
 of the general questions in [AGENTS.md](../AGENTS.md) and the built-in `/review`
 skill. Load this when reviewing a diff or preparing one for review.
 
+Before requesting review, run `python scripts/review.py` — it runs the
+mechanizable gates below (`black`, `ruff`, `pytest`, including the invariant
+tests) and prints the items that still need a human eye.
+
 ## Process
 
 - [ ] **Contract present for load-bearing changes.** A harness or knowledge edit

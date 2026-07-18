@@ -33,14 +33,19 @@ mistake pattern reappeared one PR later.
 ## Proposed Change
 
 1. Add `tests/test_invariants.py` pinning documented guarantees: single-source
-   version, graceful degradation across the whole `OSError`/`SubprocessError`
-   family, strict/deterministic JSON round-trip, the documented envelope shape,
-   `__all__` importability, and api-conventions symbol references.
+   version (and no hard-coded version literal in `src/`), graceful degradation
+   across the whole `OSError`/`SubprocessError` family, strict/deterministic JSON
+   round-trip, the documented envelope shape, `__all__` importability,
+   api-conventions symbol references, that documented public verbs stay exported,
+   and that the `schemas.md` example records stay valid and in-shape.
 2. Encode the recurring findings into `docs/review-checklist.md` and
    `docs/api-conventions.md`: catch base exceptions for degrade-gracefully
    functions (with a family test), single-source derived defaults, prose accuracy,
    rename reference-grep, and "documented guarantees are tested; coverage is not
    the bar".
+3. Add `scripts/review.py`, a pre-review self-check that runs the mechanizable
+   gates (`black`/`ruff`/`pytest`) and prints the non-mechanizable reminders, so
+   these classes are caught on one's own diff before requesting review.
 
 ## Affected Component
 
