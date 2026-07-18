@@ -151,6 +151,39 @@ def test_get_host_fallback() -> None:
         assert get_host() == "unknown"
 
 
+def test_resolve_tool_version_from_metadata() -> None:
+    """The tool version is read from installed distribution metadata."""
+    from agent_metrics.provenance import _resolve_tool_version
+
+    with patch("agent_metrics.provenance.version", return_value="9.9.9"):
+        assert _resolve_tool_version() == "9.9.9"
+
+
+def test_resolve_tool_version_fallback() -> None:
+    """A source tree without an installed distribution falls back safely."""
+    from importlib.metadata import PackageNotFoundError
+
+    from agent_metrics.provenance import _resolve_tool_version
+
+    with patch("agent_metrics.provenance.version", side_effect=PackageNotFoundError()):
+        assert _resolve_tool_version() == "0+unknown"
+
+
+def test_build_provenance_defaults_tool_version_from_metadata() -> None:
+    """build_provenance resolves tool_version from metadata when omitted."""
+    git_meta = {"commit": "c", "remote_url": "u", "branch": "b", "dirty": True}
+    with (
+        patch("agent_metrics.provenance.get_git_metadata", return_value=git_meta),
+        patch("agent_metrics.provenance.get_host", return_value="host"),
+        patch("agent_metrics.provenance.detect_environment", return_value=LOCAL),
+        patch("agent_metrics.provenance.resolve_timestamp", return_value="t"),
+        patch("agent_metrics.provenance._resolve_tool_version", return_value="9.9.9"),
+    ):
+        record = build_provenance(STRUCTURAL_HEALTH_SCHEMA_VERSION)
+
+    assert record["tool_version"] == "9.9.9"
+
+
 def test_detect_environment() -> None:
     """A truthy CI flag selects the ci environment; otherwise local."""
     assert detect_environment({"CI": "true"}) == CI

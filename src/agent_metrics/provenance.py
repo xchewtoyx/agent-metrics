@@ -27,6 +27,7 @@ import os
 import socket
 import subprocess
 from datetime import UTC, datetime
+from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -40,6 +41,23 @@ EFFECTIVENESS_SCHEMA_VERSION = "agent-metrics/effectiveness/v1"
 
 # Default bundle identifier when a caller does not name the measured bundle.
 DEFAULT_BUNDLE = "default"
+
+# Distribution name used to resolve the tool version from installed metadata.
+_DISTRIBUTION_NAME = "agent-metrics"
+
+
+def _resolve_tool_version() -> str:
+    """Return the installed agent-metrics version, or a safe fallback.
+
+    Reading distribution metadata keeps ``tool_version`` accurate as the package
+    version changes instead of drifting from a hard-coded default. Falls back to
+    ``"0+unknown"`` when run from a source tree without an installed distribution.
+    """
+    try:
+        return version(_DISTRIBUTION_NAME)
+    except PackageNotFoundError:
+        return "0+unknown"
+
 
 # Durability classes.
 DURABLE = "durable"  # clean commit measured by CI (for example on merge)
@@ -200,7 +218,7 @@ def build_provenance(
     *,
     bundle: str = DEFAULT_BUNDLE,
     directory: str = ".",
-    tool_version: str = "0.1.0",
+    tool_version: str | None = None,
     correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """Build the provenance envelope shared by every JSONL record.
@@ -209,12 +227,17 @@ def build_provenance(
     ``environment`` are context. ``durability`` distinguishes durable CI-on-merge
     evidence from advisory local runs.
 
-    ``correlation_id`` is optional and included only when supplied. It ties
-    related records into a single timeline (for example a wrapper block and its
-    later recovery) and maps to ``gen_ai.conversation.id`` on OTLP export.
+    ``tool_version`` defaults to the installed agent-metrics version resolved from
+    package metadata, so records report the actual version rather than a
+    hard-coded default. ``correlation_id`` is optional and included only when
+    supplied. It ties related records into a single timeline (for example a
+    wrapper block and its later recovery) and maps to ``gen_ai.conversation.id``
+    on OTLP export.
     """
     git_meta = get_git_metadata(directory)
     environment = detect_environment()
+    if tool_version is None:
+        tool_version = _resolve_tool_version()
     envelope = {
         "schema_version": schema_version,
         "remote_url": git_meta["remote_url"],
@@ -243,7 +266,7 @@ def build_effectiveness_envelope(
     metrics: Mapping[str, Any] | None = None,
     bundle: str = DEFAULT_BUNDLE,
     directory: str = ".",
-    tool_version: str = "0.1.0",
+    tool_version: str | None = None,
     correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """Build an effectiveness (A/B replay) record.

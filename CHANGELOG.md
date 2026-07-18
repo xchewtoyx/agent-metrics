@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated agent instructions (`AGENTS.md`) with explicit project layout guidelines, modular API design principles, design simplification rules, and the Boy Scout Rule.
 
 ### Fixed
+- `tool_version` now defaults to the installed package version resolved from distribution metadata instead of a hard-coded string, so library callers that omit it report the actual version rather than a stale default after version bumps. `__version__` is resolved the same way, making `pyproject.toml` the single source of truth.
+- `get_git_metadata` catches `OSError` (covering `NotADirectoryError`/`PermissionError` for unreadable paths, and `FileNotFoundError` when git is absent), so it always degrades to the documented safe fallback instead of raising.
 - Timestamp resolution (`resolve_timestamp`) suppresses `OverflowError` and `OSError` in addition to `ValueError` when parsing `SOURCE_DATE_EPOCH`, preventing crashes on out-of-range epoch values set by users or CI environments.
 
 

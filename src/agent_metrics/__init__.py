@@ -18,6 +18,7 @@ from agent_metrics.provenance import (
     DURABLE,
     EFFECTIVENESS_SCHEMA_VERSION,
     STRUCTURAL_HEALTH_SCHEMA_VERSION,
+    _resolve_tool_version,
     build_effectiveness_envelope,
     build_provenance,
     effectiveness_dedupe_key,
@@ -26,7 +27,7 @@ from agent_metrics.provenance import (
     to_otel_attributes,
 )
 
-__version__ = "0.1.0"
+__version__ = _resolve_tool_version()
 
 __all__ = [
     "__version__",

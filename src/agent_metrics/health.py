@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 def build_health_envelope(
     metrics: dict[str, Any],
     directory: str = ".",
-    tool_version: str = "0.1.0",
+    tool_version: str | None = None,
     bundle: str = DEFAULT_BUNDLE,
     correlation_id: str | None = None,
 ) -> dict[str, Any]:
@@ -123,7 +123,7 @@ def capture_health(
     metrics: dict[str, Any] | None = None,
     input_file: Any | None = None,
     append: bool = False,
-    tool_version: str = "0.1.0",
+    tool_version: str | None = None,
     bundle: str = DEFAULT_BUNDLE,
     correlation_id: str | None = None,
 ) -> dict[str, Any]:

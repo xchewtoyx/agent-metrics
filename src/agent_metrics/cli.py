@@ -84,7 +84,6 @@ def health(
             metrics=parsed_metrics,
             input_file=input_file,
             append=append,
-            tool_version=__version__,
             bundle=bundle,
             correlation_id=correlation_id,
         )
