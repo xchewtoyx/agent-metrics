@@ -13,6 +13,7 @@ from agent_metrics.health import (
 )
 from agent_metrics.provenance import (
     ADVISORY,
+    AGENT_METRICS_NAMESPACE,
     DEFAULT_BUNDLE,
     DURABLE,
     EFFECTIVENESS_SCHEMA_VERSION,
@@ -25,6 +26,7 @@ from agent_metrics.provenance import (
     get_git_metadata,
     get_host,
     structural_health_dedupe_key,
+    to_otel_attributes,
 )
 
 __version__ = "0.1.0"
@@ -32,6 +34,7 @@ __version__ = "0.1.0"
 __all__ = [
     "__version__",
     "ADVISORY",
+    "AGENT_METRICS_NAMESPACE",
     "AgentMetricsError",
     "DEFAULT_BUNDLE",
     "DURABLE",
@@ -51,4 +54,5 @@ __all__ = [
     "parse_metric_value",
     "parse_metrics_definitions",
     "structural_health_dedupe_key",
+    "to_otel_attributes",
 ]

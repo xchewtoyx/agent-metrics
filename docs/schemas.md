@@ -88,3 +88,53 @@ coordinates needed to compare arms and replays:
 
 The two records above share every identity field except `run_index`, so both
 replays are preserved rather than deduplicated.
+
+## Correlation
+
+Any record may carry an optional `correlation_id`. It is omitted unless supplied
+and ties related records into a single timeline — for example a wrapper block
+and its later recovery, or every record produced within one agent session. On
+export it maps to the OpenTelemetry `gen_ai.conversation.id` attribute.
+
+## OpenTelemetry alignment
+
+agent-metrics keeps its on-disk JSONL schema stable and self-describing, and
+maps to OpenTelemetry semantic conventions only at the *export boundary* via
+`agent_metrics.to_otel_attributes(record)`. The `vcs.*` conventions are Release
+Candidate and the `gen_ai.*` conventions are still evolving in their own
+semantic-conventions repository, so the durable evidence on disk is deliberately
+not coupled to them; the `schema_version` field is the versioning contract
+instead.
+
+The mapping reuses existing conventions where they fit and reserves the
+`agent_metrics.*` namespace for concepts OpenTelemetry does not yet cover, so our
+fields never collide with a future standard attribute:
+
+| Record field     | OpenTelemetry attribute        | Notes                                        |
+| ---------------- | ------------------------------ | -------------------------------------------- |
+| `remote_url`     | `vcs.repository.url.full`      | VCS (RC).                                     |
+| `commit`         | `vcs.ref.head.revision`        | VCS (RC).                                     |
+| `branch`         | `vcs.ref.head.name`            | VCS (RC).                                     |
+| `host`           | `host.name`                    | OTel Resource attribute.                      |
+| `tool_version`   | `service.version`             | Resource; service is agent-metrics.          |
+| `correlation_id` | `gen_ai.conversation.id`       | GenAI (evolving); omitted when unset.         |
+| `model`          | `gen_ai.request.model`         | GenAI (evolving).                             |
+| `harness_version`| `gen_ai.agent.version`         | GenAI (evolving).                             |
+| `schema_version` | `agent_metrics.schema_version` | No stable OTel home → reserved namespace.     |
+| `bundle`         | `agent_metrics.bundle`         | Reserved namespace.                           |
+| `dirty`          | `agent_metrics.dirty`          | Reserved namespace.                           |
+| `environment`    | `agent_metrics.environment`    | Coarser than `deployment.environment.name`.   |
+| `durability`     | `agent_metrics.durability`     | Reserved namespace.                           |
+| `task_set`       | `agent_metrics.task_set`       | Reserved namespace.                           |
+| `run_index`      | `agent_metrics.run_index`      | Reserved namespace.                           |
+| `experiment_arms`| `agent_metrics.experiment_arms`| Reserved namespace; array of strings.         |
+
+Two fields are intentionally **not** exported as attributes:
+
+* `timestamp` becomes the span/log timestamp of the exported record.
+* `metrics` values map to OpenTelemetry metric data points, not span attributes.
+
+Fields with a `None` value (for example `commit` outside a git checkout) are
+omitted from the attribute set. Any future field that is not in the mapping table
+is exported under `agent_metrics.*` automatically, so new concepts stay
+namespace-safe by default.

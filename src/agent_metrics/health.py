@@ -28,6 +28,7 @@ def create_health_envelope(
     directory: str = ".",
     tool_version: str = "0.1.0",
     bundle: str = DEFAULT_BUNDLE,
+    correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """Wrap structural health metrics in the versioned provenance envelope."""
     record = build_provenance(
@@ -35,6 +36,7 @@ def create_health_envelope(
         bundle=bundle,
         directory=directory,
         tool_version=tool_version,
+        correlation_id=correlation_id,
     )
     record["metrics"] = metrics
     return record
@@ -128,6 +130,7 @@ def capture_health(
     append: bool = False,
     tool_version: str = "0.1.0",
     bundle: str = DEFAULT_BUNDLE,
+    correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """Capture codebase health metrics wrapped in a git provenance envelope.
 
@@ -140,7 +143,9 @@ def capture_health(
     if metrics is not None:
         merged_metrics.update(metrics)
 
-    record = create_health_envelope(merged_metrics, directory, tool_version, bundle)
+    record = create_health_envelope(
+        merged_metrics, directory, tool_version, bundle, correlation_id
+    )
 
     # Validate strict JSON by dumps-ing first
     json.dumps(record, sort_keys=True, allow_nan=False)

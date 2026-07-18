@@ -46,6 +46,13 @@ def main() -> None:
     show_default=True,
     help="Identifier of the measured bundle; part of the dedupe identity.",
 )
+@click.option(
+    "--correlation-id",
+    "correlation_id",
+    default=None,
+    help="Optional id tying related records into one timeline "
+    "(maps to gen_ai.conversation.id on OTLP export).",
+)
 @click.argument(
     "directory",
     type=click.Path(exists=True, file_okay=False, dir_okay=True),
@@ -56,6 +63,7 @@ def health(
     metrics: tuple[str, ...],
     input_file: Any | None,
     bundle: str,
+    correlation_id: str | None,
     directory: str,
 ) -> None:
     """Record objective structural health for a repository or bundle."""
@@ -78,6 +86,7 @@ def health(
             append=append,
             tool_version=__version__,
             bundle=bundle,
+            correlation_id=correlation_id,
         )
         record_str = json.dumps(
             record,

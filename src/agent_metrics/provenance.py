@@ -49,6 +49,36 @@ ADVISORY = "advisory"  # local or dirty run; informational only
 CI = "ci"
 LOCAL = "local"
 
+# Reserved namespace for agent-metrics concepts that have no stable OpenTelemetry
+# semantic-convention home. Novel fields are exported under this prefix so they
+# never collide with a future OTel attribute (see ``to_otel_attributes``).
+AGENT_METRICS_NAMESPACE = "agent_metrics"
+
+# Maps JSONL field names onto existing OpenTelemetry semantic-convention
+# attributes. Fields not listed here are exported under the reserved
+# ``agent_metrics.*`` namespace. ``timestamp`` and ``metrics`` are excluded
+# entirely (see ``to_otel_attributes``).
+#
+# ``vcs.*`` attributes are Release Candidate; ``gen_ai.*`` attributes are still
+# evolving in the OpenTelemetry GenAI semantic-conventions repository. We map to
+# them only at this export boundary and keep the on-disk JSONL schema stable so
+# our durable evidence is not coupled to an in-flux specification.
+_OTEL_ATTRIBUTE_MAP = {
+    "remote_url": "vcs.repository.url.full",
+    "commit": "vcs.ref.head.revision",
+    "branch": "vcs.ref.head.name",
+    "host": "host.name",
+    "tool_version": "service.version",
+    "correlation_id": "gen_ai.conversation.id",
+    "model": "gen_ai.request.model",
+    "harness_version": "gen_ai.agent.version",
+}
+
+# Fields excluded from attribute export: ``timestamp`` becomes the OTel span/log
+# timestamp, and ``metrics`` values map to OTel metric data points rather than
+# span attributes.
+_OTEL_EXCLUDED_FIELDS = frozenset({"timestamp", "metrics"})
+
 
 def _git_value(abs_path: str, args: list[str]) -> str | None:
     """Return the stripped stdout of a git command, or None on any failure."""
@@ -168,16 +198,21 @@ def build_provenance(
     bundle: str = DEFAULT_BUNDLE,
     directory: str = ".",
     tool_version: str = "0.1.0",
+    correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """Build the provenance envelope shared by every JSONL record.
 
     Durable identity is ``remote_url`` and ``commit``; ``branch``, ``host``, and
     ``environment`` are context. ``durability`` distinguishes durable CI-on-merge
     evidence from advisory local runs.
+
+    ``correlation_id`` is optional and included only when supplied. It ties
+    related records into a single timeline (for example a wrapper block and its
+    later recovery) and maps to ``gen_ai.conversation.id`` on OTLP export.
     """
     git_meta = get_git_metadata(directory)
     environment = detect_environment()
-    return {
+    envelope = {
         "schema_version": schema_version,
         "remote_url": git_meta["remote_url"],
         "commit": git_meta["commit"],
@@ -190,6 +225,9 @@ def build_provenance(
         "timestamp": resolve_timestamp(),
         "tool_version": tool_version,
     }
+    if correlation_id is not None:
+        envelope["correlation_id"] = correlation_id
+    return envelope
 
 
 def build_effectiveness_envelope(
@@ -203,6 +241,7 @@ def build_effectiveness_envelope(
     bundle: str = DEFAULT_BUNDLE,
     directory: str = ".",
     tool_version: str = "0.1.0",
+    correlation_id: str | None = None,
 ) -> dict[str, Any]:
     """Build an effectiveness (A/B replay) record.
 
@@ -214,6 +253,7 @@ def build_effectiveness_envelope(
         bundle=bundle,
         directory=directory,
         tool_version=tool_version,
+        correlation_id=correlation_id,
     )
     record.update(
         {
@@ -260,3 +300,25 @@ def effectiveness_dedupe_key(record: Mapping[str, Any]) -> tuple[Any, ...]:
         record.get("run_index"),
         tuple(record.get("experiment_arms") or ()),
     )
+
+
+def to_otel_attributes(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Map a record's provenance and context fields to OpenTelemetry attributes.
+
+    Reuses existing ``vcs.*``, ``gen_ai.*``, ``host.*``, and ``service.*``
+    semantic conventions where they fit, and places agent-metrics-specific
+    concepts under the reserved ``agent_metrics.*`` namespace so they never
+    collide with a future OTel attribute. This is the single export boundary
+    between the stable on-disk JSONL schema and the evolving OTel conventions.
+
+    ``timestamp`` (the record's own time) and ``metrics`` (measured values that
+    map to OTel metric data points, not attributes) are excluded. Fields with a
+    ``None`` value are omitted so the attribute set stays clean.
+    """
+    attributes: dict[str, Any] = {}
+    for key, value in record.items():
+        if key in _OTEL_EXCLUDED_FIELDS or value is None:
+            continue
+        name = _OTEL_ATTRIBUTE_MAP.get(key, f"{AGENT_METRICS_NAMESPACE}.{key}")
+        attributes[name] = value
+    return attributes

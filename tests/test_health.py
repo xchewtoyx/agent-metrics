@@ -51,6 +51,7 @@ def test_create_health_envelope() -> None:
         bundle="okf-core",
         directory=".",
         tool_version="0.2.0",
+        correlation_id=None,
     )
     assert envelope["schema_version"] == STRUCTURAL_HEALTH_SCHEMA_VERSION
     assert envelope["commit"] == "123456"
@@ -232,6 +233,18 @@ def test_cli_health_bundle_and_schema(tmp_path: Path) -> None:
     assert "branch" in data
     assert "host" in data
     assert "durability" in data
+    # correlation_id is optional and absent unless requested.
+    assert "correlation_id" not in data
+
+
+def test_cli_health_correlation_id(tmp_path: Path) -> None:
+    """CLI health records a correlation id only when supplied."""
+    result = CliRunner().invoke(
+        main,
+        ["health", "--correlation-id", "session-42", str(tmp_path)],
+    )
+    assert result.exit_code == 0
+    assert json.loads(result.output)["correlation_id"] == "session-42"
 
 
 def test_cli_health_infinite_floats() -> None:

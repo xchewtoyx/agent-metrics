@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- OpenTelemetry alignment for the JSONL schemas: a `to_otel_attributes` export helper mapping records onto `vcs.*`, `gen_ai.*`, `host.*`, and `service.*` semantic conventions, a reserved `agent_metrics.*` namespace (`AGENT_METRICS_NAMESPACE`) for concepts OTel does not cover, and an optional `correlation_id` envelope field (also exposed as `health --correlation-id`) mapping to `gen_ai.conversation.id`.
 - Versioned JSONL schemas and a shared provenance envelope in a new `provenance` module, defining the durable identity (remote URL, commit SHA, bundle) and context (branch, host, environment, durability) carried by every record.
 - Structural health (`agent-metrics/structural-health/v1`) and effectiveness (`agent-metrics/effectiveness/v1`) record schemas, with `structural_health_dedupe_key` and `effectiveness_dedupe_key` helpers and a `build_effectiveness_envelope` builder.
 - Durability classification distinguishing `durable` CI-on-clean-commit records from `advisory` local or dirty runs.

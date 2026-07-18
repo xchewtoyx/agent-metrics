@@ -23,6 +23,7 @@ from agent_metrics.provenance import (
     get_host,
     resolve_timestamp,
     structural_health_dedupe_key,
+    to_otel_attributes,
 )
 
 
@@ -226,6 +227,24 @@ def test_build_provenance_defaults() -> None:
     assert record["durability"] == ADVISORY
 
 
+def test_build_provenance_correlation_id() -> None:
+    """correlation_id is included only when supplied."""
+    git_meta = {"commit": "c", "remote_url": "u", "branch": "b", "dirty": True}
+    with (
+        patch("agent_metrics.provenance.get_git_metadata", return_value=git_meta),
+        patch("agent_metrics.provenance.get_host", return_value="host"),
+        patch("agent_metrics.provenance.detect_environment", return_value=LOCAL),
+        patch("agent_metrics.provenance.resolve_timestamp", return_value="t"),
+    ):
+        without = build_provenance(STRUCTURAL_HEALTH_SCHEMA_VERSION)
+        with_id = build_provenance(
+            STRUCTURAL_HEALTH_SCHEMA_VERSION, correlation_id="session-42"
+        )
+
+    assert "correlation_id" not in without
+    assert with_id["correlation_id"] == "session-42"
+
+
 def test_build_effectiveness_envelope() -> None:
     """Effectiveness records carry provenance plus experiment coordinates."""
     git_meta = {
@@ -329,3 +348,83 @@ def test_effectiveness_dedupe_key_separates_runs_and_arms() -> None:
         None,
         (),
     )
+
+
+def test_to_otel_attributes_maps_known_conventions() -> None:
+    """Known fields map to vcs.*, gen_ai.*, host.*, and service.* attributes."""
+    record = {
+        "schema_version": STRUCTURAL_HEALTH_SCHEMA_VERSION,
+        "remote_url": "https://github.com/foo/bar.git",
+        "commit": "cafe",
+        "branch": "main",
+        "dirty": False,
+        "bundle": "okf-core",
+        "host": "ci-runner",
+        "environment": CI,
+        "durability": DURABLE,
+        "timestamp": "2026-07-18T00:00:00Z",
+        "tool_version": "0.1.0",
+        "correlation_id": "session-42",
+        "metrics": {"concepts": 128},
+    }
+
+    attributes = to_otel_attributes(record)
+
+    assert attributes["vcs.repository.url.full"] == "https://github.com/foo/bar.git"
+    assert attributes["vcs.ref.head.revision"] == "cafe"
+    assert attributes["vcs.ref.head.name"] == "main"
+    assert attributes["host.name"] == "ci-runner"
+    assert attributes["service.version"] == "0.1.0"
+    assert attributes["gen_ai.conversation.id"] == "session-42"
+    # timestamp and metrics are deliberately excluded.
+    assert "timestamp" not in attributes
+    assert not any(name.endswith("metrics") for name in attributes)
+
+
+def test_to_otel_attributes_namespaces_novel_fields() -> None:
+    """Fields without an OTel home go under the reserved agent_metrics.* prefix."""
+    record = {
+        "schema_version": STRUCTURAL_HEALTH_SCHEMA_VERSION,
+        "dirty": True,
+        "bundle": "okf-core",
+        "environment": LOCAL,
+        "durability": ADVISORY,
+    }
+
+    attributes = to_otel_attributes(record)
+
+    assert (
+        attributes["agent_metrics.schema_version"] == STRUCTURAL_HEALTH_SCHEMA_VERSION
+    )
+    assert attributes["agent_metrics.dirty"] is True
+    assert attributes["agent_metrics.bundle"] == "okf-core"
+    assert attributes["agent_metrics.environment"] == LOCAL
+    assert attributes["agent_metrics.durability"] == ADVISORY
+
+
+def test_to_otel_attributes_maps_effectiveness_fields() -> None:
+    """Effectiveness coordinates map to gen_ai.* or the reserved namespace."""
+    record = {
+        "model": "claude",
+        "harness_version": "1.4.0",
+        "task_set": "swe-bench-lite",
+        "run_index": 0,
+        "experiment_arms": ["control", "treatment"],
+    }
+
+    attributes = to_otel_attributes(record)
+
+    assert attributes["gen_ai.request.model"] == "claude"
+    assert attributes["gen_ai.agent.version"] == "1.4.0"
+    assert attributes["agent_metrics.task_set"] == "swe-bench-lite"
+    assert attributes["agent_metrics.run_index"] == 0
+    assert attributes["agent_metrics.experiment_arms"] == ["control", "treatment"]
+
+
+def test_to_otel_attributes_omits_none_values() -> None:
+    """None-valued identity fields are omitted from the attribute set."""
+    record = {"remote_url": None, "commit": None, "branch": "main"}
+
+    attributes = to_otel_attributes(record)
+
+    assert attributes == {"vcs.ref.head.name": "main"}
