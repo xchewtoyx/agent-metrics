@@ -21,6 +21,7 @@ and settled outcomes.
 - Test both positive and negative cases. A command that succeeds should prove the happy
   path; a command that rejects bad input should fail clearly and usefully.
 - Optimize for maintainability before performance, then measure before tuning.
+- Document all user-facing or behavior changes in [CHANGELOG.md](CHANGELOG.md) under the `[Unreleased]` section following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions on every pull request.
 
 ## Local Workflow
 
@@ -51,3 +52,4 @@ Reviews should ask:
 - Is there an existing library or standard tool that should be used instead?
 - Does the implementation keep evidence reproducible and provenance explicit?
 - Is the code easy to read without relying on hidden context?
+- Does this change update [CHANGELOG.md](CHANGELOG.md) in the `[Unreleased]` section using Keep a Changelog conventions?
