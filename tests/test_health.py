@@ -12,9 +12,14 @@ from click.testing import CliRunner
 
 from agent_metrics.cli import main
 from agent_metrics.health import (
+    AgentMetricsError,
     append_health_record,
+    capture_health,
     create_health_envelope,
     get_git_metadata,
+    load_metrics,
+    parse_metric_value,
+    parse_metrics_definitions,
 )
 
 if TYPE_CHECKING:
@@ -336,3 +341,91 @@ def test_cli_health_non_json_value_in_file(tmp_path: Path) -> None:
     result = CliRunner().invoke(main, ["health", "--input-file", str(json_file)])
     assert result.exit_code != 0
     assert "Metrics contain non-JSON values" in result.output
+
+
+def test_api_load_metrics(tmp_path: Path) -> None:
+    """Test load_metrics with different input types."""
+    # 1. None returns empty dict
+    assert load_metrics(None) == {}
+
+    # 2. Dictionary returns copy
+    d = {"test": 1}
+    res = load_metrics(d)
+    assert res == d
+    assert res is not d
+
+    # 3. Valid JSON filepath loading
+    f = tmp_path / "valid.json"
+    f.write_text('{"a": 2}')
+    assert load_metrics(str(f)) == {"a": 2}
+
+    # 4. Invalid source raises TypeError
+    import pytest
+
+    with pytest.raises(TypeError):
+        load_metrics(123)
+
+    # 5. Non-dict JSON raises AgentMetricsError
+    f2 = tmp_path / "invalid.json"
+    f2.write_text("[1, 2]")
+    with pytest.raises(AgentMetricsError):
+        load_metrics(str(f2))
+
+
+def test_api_parse_metric_value() -> None:
+    """Test parsing logic directly."""
+    import pytest
+
+    assert parse_metric_value("10") == 10
+    assert parse_metric_value("2.5") == 2.5
+    assert parse_metric_value("string") == "string"
+
+    with pytest.raises(AgentMetricsError):
+        parse_metric_value("NaN")
+
+
+def test_api_parse_metrics_definitions() -> None:
+    """Test definitions list parsing directly."""
+    import pytest
+
+    assert parse_metrics_definitions(["a=1", "b=foo"]) == {"a": 1, "b": "foo"}
+
+    with pytest.raises(AgentMetricsError):
+        parse_metrics_definitions(["invalid"])
+
+    with pytest.raises(AgentMetricsError):
+        parse_metrics_definitions(["=1"])
+
+
+def test_api_capture_health(tmp_path: Path) -> None:
+    """Test capture_health API method directly."""
+    f = tmp_path / "f.json"
+    f.write_text('{"from_file": 1}')
+
+    record = capture_health(
+        directory=str(tmp_path),
+        metrics={"from_dict": "val"},
+        input_file=str(f),
+        append=True,
+    )
+
+    assert record["metrics"] == {"from_file": 1, "from_dict": "val"}
+    log_path = tmp_path / ".agent-metrics" / "health.jsonl"
+    assert log_path.exists()
+
+    record2 = capture_health(
+        directory=str(tmp_path),
+        metrics=None,
+        input_file=None,
+        append=False,
+    )
+    assert record2["metrics"] == {}
+
+
+def test_cli_health_type_error_handling() -> None:
+    """Test CLI health gracefully handles TypeErrors from the API."""
+    with patch("agent_metrics.health.capture_health") as mock_cap:
+        mock_cap.side_effect = TypeError("Mocked TypeError")
+        result = CliRunner().invoke(main, ["health"])
+        assert result.exit_code != 0
+        assert "Type error: Mocked TypeError" in result.output

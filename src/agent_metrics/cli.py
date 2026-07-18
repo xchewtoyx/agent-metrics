@@ -16,48 +16,6 @@ def main() -> None:
     """Measure agent and knowledge-repo changes with plain-file evidence."""
 
 
-def _parse_val(val_str: str) -> int | float | str:
-    import math
-
-    try:
-        return int(val_str)
-    except ValueError:
-        try:
-            value = float(val_str)
-            if not math.isfinite(value):
-                raise click.BadParameter(
-                    f"Metric value '{val_str}' must be a finite number."
-                )
-            return value
-        except ValueError:
-            return val_str
-
-
-def _load_input_file(input_file: Any | None) -> dict[str, Any]:
-    if input_file is None:
-        return {}
-    try:
-        file_data = json.load(input_file)
-        if not isinstance(file_data, dict):
-            raise click.ClickException("Metrics input file must be a JSON object.")
-        return file_data
-    except json.JSONDecodeError as e:
-        raise click.ClickException(f"Invalid JSON in metrics input: {e}") from e
-
-
-def _parse_metrics(metrics: tuple[str, ...]) -> dict[str, Any]:
-    parsed = {}
-    for metric in metrics:
-        if "=" not in metric:
-            raise click.BadParameter(f"Metric '{metric}' must be in KEY=VALUE format.")
-        key, val_str = metric.split("=", 1)
-        key = key.strip()
-        if not key:
-            raise click.BadParameter("Metric key cannot be empty.")
-        parsed[key] = _parse_val(val_str.strip())
-    return parsed
-
-
 @main.command()
 @click.option(
     "--append",
@@ -91,25 +49,40 @@ def health(
     directory: str,
 ) -> None:
     """Record objective structural health for a repository or bundle."""
-    from agent_metrics.health import append_health_record, create_health_envelope
+    from agent_metrics.health import (
+        AgentMetricsError,
+        capture_health,
+        parse_metrics_definitions,
+    )
 
-    merged_metrics = _load_input_file(input_file)
-    parsed_metrics = _parse_metrics(metrics)
-    merged_metrics.update(parsed_metrics)
-
-    record = create_health_envelope(merged_metrics, directory, __version__)
     try:
+        parsed_metrics = parse_metrics_definitions(metrics)
+    except ValueError as e:
+        raise click.BadParameter(str(e)) from e
+
+    try:
+        record = capture_health(
+            directory=directory,
+            metrics=parsed_metrics,
+            input_file=input_file,
+            append=append,
+            tool_version=__version__,
+        )
         record_str = json.dumps(
             record,
             separators=(",", ":"),
             sort_keys=True,
             allow_nan=False,
         )
+    except AgentMetricsError as e:
+        raise click.ClickException(f"Invalid metrics input: {e}") from e
+    except TypeError as e:
+        raise click.ClickException(f"Type error: {e}") from e
+    except json.JSONDecodeError as e:
+        raise click.ClickException(f"Invalid JSON in metrics input: {e}") from e
     except ValueError as e:
         raise click.ClickException(f"Metrics contain non-JSON values: {e}") from e
 
-    if append:
-        append_health_record(directory, record)
     click.echo(record_str)
 
 

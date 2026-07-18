@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Git telemetry extraction logic capturing remote URL, current commit hash, dirty workspace flag, and durability/provenance status.
 - Verification test suite covering git boundary conditions, serialization errors, and parameter parsing constraints.
 - Dogfooded change contracts `0001_initial_milestone.md` and `0002_health_command.md` under `.agent-metrics/contracts/`.
+- Structured Python library API exposing `capture_health`, `load_metrics`, `parse_metric_value`, `parse_metrics_definitions`, and `AgentMetricsError` to support third-party programmatic extensions.
+
+### Changed
+- Refactored CLI execution endpoints in `cli.py` to act as lightweight argument/option parsing wrappers delegating to the library API.
 
 ## [0.1.0] - 2026-07-18
 - Initial project skeleton containing Click CLI setup, testing harness, and development workflow parameters.
