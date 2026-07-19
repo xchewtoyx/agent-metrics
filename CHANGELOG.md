@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Contract/invariant test suite (`tests/test_invariants.py`) that asserts documented guarantees rather than chasing coverage: single-source version (and no hard-coded version literal in `src/`), graceful degradation across the whole `OSError`/`SubprocessError` family, strict/deterministic JSON round-trip, the documented envelope shape, that `__all__` and documented public verbs stay in sync, that api-conventions symbol references resolve, and that the `schemas.md` example records stay valid.
+- `scripts/review.py`, a pre-review self-check that runs the mechanizable gates (`black`/`ruff`/`pytest`) and prints the non-mechanizable checklist reminders.
+- Encoded recurring review findings into the harness: `docs/review-checklist.md` and `docs/api-conventions.md` now cover catching base exceptions for degrade-gracefully functions, single-source derived defaults, prose-accuracy, rename reference-grep, and that documented guarantees are tested (coverage alone is not the bar). Dogfooded as contract `0007_review_retro_guardrails.md`.
 - Release flow modeled on `okf-core`: a `publish` workflow and PEP 503 index generator (`.github/scripts/gen_index.py`) that build on GitHub Release, upload artifacts, and deploy a self-hosted simple index to GitHub Pages, with install instructions in the README and the process documented in [docs/releasing.md](docs/releasing.md).
 - Documented version bump policies: a SemVer policy for the package (`tool_version`) in [docs/releasing.md](docs/releasing.md), and a per-record-type schema-versioning and consumer-compatibility policy for `schema_version` in [docs/schemas.md](docs/schemas.md), including how the two evolve independently.
 - Dogfooded change contract `0006_release_flow_and_bump_policy.md` under `.agent-metrics/contracts/`.

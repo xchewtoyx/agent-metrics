@@ -33,7 +33,7 @@ For a load-bearing harness or knowledge change, follow this loop:
 1. **Contract first.** Scaffold a prediction in `.agent-metrics/contracts/NNNN_slug.md` (observed failure, root cause, proposed change, predicted fixes, risks, verification, settle criteria) before load-bearing edits. Pure docs or trivial refactors can skip this.
 2. **Library-first.** Put logic in a focused module under `src/agent_metrics/`, keep `cli.py` thin, and expose through `__all__` only what consumers call. Follow the naming verbs in [docs/api-conventions.md](docs/api-conventions.md).
 3. **Records through provenance.** Every JSONL record uses the provenance envelope with a versioned `schema_version`; dedupe by commit, and map to OpenTelemetry only at the export boundary. See [docs/schemas.md](docs/schemas.md).
-4. **Verify.** Cover positive and negative cases, run `black`/`ruff`/`pytest`, and update `CHANGELOG.md`.
+4. **Verify.** Cover positive and negative cases and assert documented guarantees (not just line coverage — see [docs/review-checklist.md](docs/review-checklist.md)). Run `python scripts/review.py` (`black`/`ruff`/`pytest`) and update `CHANGELOG.md`.
 5. **Settle.** Record the outcome and verdict against the contract's settle criteria.
 
 ## Project Layout and API Design
