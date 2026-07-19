@@ -100,7 +100,7 @@ def test_health_record_round_trips_as_strict_json() -> None:
 
 
 def test_every_record_carries_documented_envelope_fields() -> None:
-    """capture_health emits exactly the fields documented in docs/schemas.md.
+    """capture_health emits at least the fields documented in docs/schemas.md.
 
     Guards doc/code drift on the record shape: the documented envelope table and
     the produced record cannot silently diverge.
