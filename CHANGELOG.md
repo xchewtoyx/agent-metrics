@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `agent-metrics contract`, which scaffolds deterministic markdown pre-change
+  contracts under `.agent-metrics/contracts/` with explicit invalid-name and
+  collision failures. Dogfooded as contract `0008_contract_command.md`.
+- `ContractScaffold` from the package root, matching the public return type of
+  `scaffold_contract`.
 - Contract/invariant test suite (`tests/test_invariants.py`) that asserts documented guarantees rather than chasing coverage: single-source version (and no hard-coded version literal in `src/`), graceful degradation across the whole `OSError`/`SubprocessError` family, strict/deterministic JSON round-trip, the documented envelope shape, that `__all__` and documented public verbs stay in sync, that api-conventions symbol references resolve, and that the `schemas.md` example records stay valid.
 - `scripts/review.py`, a pre-review self-check that runs the mechanizable gates (`black`/`ruff`/`pytest`) and prints the non-mechanizable checklist reminders.
 - Encoded recurring review findings into the harness: `docs/review-checklist.md` and `docs/api-conventions.md` now cover catching base exceptions for degrade-gracefully functions, single-source derived defaults, prose-accuracy, rename reference-grep, and that documented guarantees are tested (coverage alone is not the bar). Dogfooded as contract `0007_review_retro_guardrails.md`.

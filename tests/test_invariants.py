@@ -21,6 +21,7 @@ import agent_metrics as am
 from agent_metrics import (
     EFFECTIVENESS_SCHEMA_VERSION,
     STRUCTURAL_HEALTH_SCHEMA_VERSION,
+    ContractScaffold,
     cli,
     errors,
     health,
@@ -113,6 +114,11 @@ def test_all_public_exports_are_importable() -> None:
     """Every name in __all__ resolves, so the documented surface is real."""
     missing = [name for name in am.__all__ if not hasattr(am, name)]
     assert not missing, f"__all__ names not importable: {missing}"
+
+
+def test_scaffold_contract_return_type_is_public() -> None:
+    """scaffold_contract's declared return type is part of the public API."""
+    assert am.ContractScaffold is ContractScaffold
 
 
 def test_api_convention_examples_reference_real_symbols() -> None:

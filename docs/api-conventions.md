@@ -18,6 +18,7 @@ here is load-bearing: it keeps the public surface predictable and prevents drift
 | `parse_*` | Convert strings / CLI input to typed Python. Raise `AgentMetricsError` on bad input. | `parse_metric_value`, `parse_metrics_definitions` |
 | `load_*` | Read structured data from a file, stream, or dict. | `load_metrics` |
 | `append_*` | Write a record to append-only JSONL. | `append_health_record` |
+| `scaffold_*` | Create a filesystem scaffold with deterministic naming and collision checks. | `scaffold_contract` |
 | `to_*` | Pure transform/export to another representation. | `to_otel_attributes` |
 | `*_dedupe_key` | Return the identity tuple for a record type. | `structural_health_dedupe_key`, `effectiveness_dedupe_key` |
 | `detect_*` / `classify_*` / `resolve_*` | Internal derivations of a single field. **Keep out of `__all__`.** | `detect_environment`, `classify_durability`, `resolve_timestamp` |

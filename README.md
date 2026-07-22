@@ -49,7 +49,7 @@ tag-and-release flow.
 The first milestone is deliberately small:
 
 1. `agent-metrics health --append` records structural health as append-only JSONL.
-2. `agent-metrics contract` scaffolds a one-file pre-change prediction.
+2. `agent-metrics contract "Title"` scaffolds a one-file pre-change prediction.
 3. `agent-metrics settle` records the outcome and verdict for a contract.
 4. `agent-metrics audit` reports how many harness changes had contracts and settled outcomes.
 5. Session-end or CI checks run health snapshots in the first adopter repos.
@@ -89,15 +89,19 @@ contracts or outcomes, `audit` should make that visible.
 ## Expected Commands
 
 ```text
-agent-metrics health --append
-agent-metrics contract
+agent-metrics health --append --metric concepts=128 .
+agent-metrics contract "Measure harness drift"
 agent-metrics settle
 agent-metrics audit
 agent-metrics roll
 ```
 
-These names are placeholders until implementation starts. The repository currently
-contains command stubs and project tooling only.
+`health` records metric-agnostic structural snapshots as JSON. With `--append`, it
+also writes append-only JSONL under `.agent-metrics/health.jsonl`.
+
+`contract` requires a title and writes the next deterministic markdown scaffold under
+`.agent-metrics/contracts/`. Later Stage One commands (`settle`, `audit`, and `roll`)
+are still honest stubs until their milestones land.
 
 ## Development
 
@@ -121,8 +125,8 @@ pytest
 ```
 
 The test suite uses `pytest` with coverage enabled through `pyproject.toml`. Current
-tests cover the skeleton CLI: help text, version output, clear failure for unimplemented
-commands, and rejection of unknown commands.
+tests cover the implemented `health` and `contract` commands, version/help output,
+clear failure for remaining unimplemented commands, and rejection of unknown commands.
 
 Formatting is handled by Black. Linting is handled by Ruff, including McCabe complexity
 checks, so new implementation should stay simple before it gets broad.

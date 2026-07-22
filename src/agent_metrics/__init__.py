@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from agent_metrics.contracts import ContractScaffold, scaffold_contract
 from agent_metrics.errors import AgentMetricsError
 from agent_metrics.health import (
     append_health_record,
@@ -34,6 +35,7 @@ __all__ = [
     "ADVISORY",
     "AGENT_METRICS_NAMESPACE",
     "AgentMetricsError",
+    "ContractScaffold",
     "DEFAULT_BUNDLE",
     "DURABLE",
     "EFFECTIVENESS_SCHEMA_VERSION",
@@ -48,6 +50,7 @@ __all__ = [
     "load_metrics",
     "parse_metric_value",
     "parse_metrics_definitions",
+    "scaffold_contract",
     "structural_health_dedupe_key",
     "to_otel_attributes",
 ]
