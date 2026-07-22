@@ -99,6 +99,21 @@ agent-metrics roll
 `health` records metric-agnostic structural snapshots as JSON. With `--append`, it
 also writes append-only JSONL under `.agent-metrics/health.jsonl`.
 
+The test workflow dogfoods this by running the installed `agent-metrics` CLI
+after `pytest` succeeds:
+
+```text
+agent-metrics health --append --input-file /tmp/agent-metrics-ci-health.json --bundle agent-metrics-ci .
+```
+
+CI uploads the generated `.agent-metrics/health.jsonl` as the
+`agent-metrics-health` GitHub Actions artifact so records are inspectable without
+committing generated JSONL. The current Stage One metrics are intentionally
+small and deterministic: `contract_files` counts markdown contracts in
+`.agent-metrics/contracts/`, and `pytest_passed=1` records that the snapshot was
+taken after the test command completed successfully. Richer command-derived
+metrics can land later once they can be captured without brittle output parsing.
+
 `contract` requires a title and writes the next deterministic markdown scaffold under
 `.agent-metrics/contracts/`. `settle` appends a settlement section with a validated
 `KEEP`, `IMPROVE`, or `ROLLBACK` verdict and rejects repeat settlements by default.
