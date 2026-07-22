@@ -106,9 +106,45 @@ def health(
 
 
 @main.command()
-def contract() -> None:
+@click.option(
+    "--slug",
+    "slug",
+    default=None,
+    help="Explicit lower_snake_case filename slug. Defaults to the title slug.",
+)
+@click.option(
+    "--number",
+    "number",
+    type=click.IntRange(1, 9999),
+    default=None,
+    help="Explicit four-digit contract number. Defaults to the next number.",
+)
+@click.option(
+    "--directory",
+    "-C",
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+    show_default=True,
+    help="Repository root where .agent-metrics/contracts lives.",
+)
+@click.argument("title")
+def contract(title: str, slug: str | None, number: int | None, directory: str) -> None:
     """Scaffold a pre-change prediction for load-bearing edits."""
-    _not_implemented("contract")
+    from agent_metrics.contracts import scaffold_contract
+    from agent_metrics.errors import AgentMetricsError
+
+    try:
+        scaffold = scaffold_contract(
+            title=title,
+            directory=directory,
+            slug=slug,
+            number=number,
+        )
+    except AgentMetricsError as e:
+        raise click.ClickException(f"Invalid contract input: {e}") from e
+
+    click.echo(str(scaffold.path))
 
 
 @main.command()
