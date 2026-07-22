@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The existing GitHub Actions test workflow now dogfoods `agent-metrics health
+  --append` with a small deterministic CI metric set and uploads
+  `.agent-metrics/health.jsonl` as an inspectable `agent-metrics-health`
+  artifact instead of committing generated records. Dogfooded as contract
+  `0011_ci_health_snapshot.md`.
 - `agent-metrics audit`, which reports deterministic JSON counts for contract
   files, settled contracts, unsettled contracts, malformed contract markdown,
   and ignored non-contract markdown. This first pass audits
