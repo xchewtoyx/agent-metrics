@@ -14,6 +14,9 @@ _CONTRACT_FILE_RE = re.compile(
     r"^(?P<number>\d{4})_(?P<slug>[a-z0-9]+(?:_[a-z0-9]+)*)\.md$"
 )
 _SLUG_RE = re.compile(r"^[a-z0-9]+(?:_[a-z0-9]+)*$")
+_AUDIT_LIMITATION = (
+    "Audits .agent-metrics/contracts/*.md only; does not infer all git changes."
+)
 
 
 class ContractError(AgentMetricsError):
@@ -58,6 +61,79 @@ class ContractSettlement:
     contract_id: str
     verdict: str
     evidence: str
+
+
+@dataclass(frozen=True)
+class ContractAudit:
+    """Summary of markdown contract evidence under a repository root."""
+
+    contracts_dir: Path
+    contract_files: int
+    settled_contracts: int
+    unsettled_contracts: int
+    malformed_contract_files: int
+    ignored_markdown_files: int
+    limitation: str
+
+    def to_dict(self) -> dict[str, str | int]:
+        """Return a stable, JSON-serializable audit report."""
+        return {
+            "contracts_dir": str(self.contracts_dir),
+            "contract_files": self.contract_files,
+            "settled_contracts": self.settled_contracts,
+            "unsettled_contracts": self.unsettled_contracts,
+            "malformed_contract_files": self.malformed_contract_files,
+            "ignored_markdown_files": self.ignored_markdown_files,
+            "limitation": self.limitation,
+        }
+
+
+def audit_contracts(directory: str | Path = ".") -> ContractAudit:
+    """Audit file-based contract evidence under ``.agent-metrics/contracts``.
+
+    This first pass intentionally audits contract markdown files only. It does
+    not infer all harness or knowledge-repo changes from git history.
+    """
+    contract_dir = Path(directory) / _CONTRACT_DIR
+    if not contract_dir.exists():
+        return ContractAudit(
+            contracts_dir=contract_dir,
+            contract_files=0,
+            settled_contracts=0,
+            unsettled_contracts=0,
+            malformed_contract_files=0,
+            ignored_markdown_files=0,
+            limitation=_AUDIT_LIMITATION,
+        )
+
+    contract_files = 0
+    settled_contracts = 0
+    malformed_contract_files = 0
+    ignored_markdown_files = 0
+    for path in sorted(contract_dir.glob("*.md")):
+        match = _CONTRACT_FILE_RE.fullmatch(path.name)
+        if match is None:
+            ignored_markdown_files += 1
+            continue
+
+        text = path.read_text(encoding="utf-8")
+        if not _has_contract_id(text, path.stem):
+            malformed_contract_files += 1
+            continue
+
+        contract_files += 1
+        if _has_settlement(text):
+            settled_contracts += 1
+
+    return ContractAudit(
+        contracts_dir=contract_dir,
+        contract_files=contract_files,
+        settled_contracts=settled_contracts,
+        unsettled_contracts=contract_files - settled_contracts,
+        malformed_contract_files=malformed_contract_files,
+        ignored_markdown_files=ignored_markdown_files,
+        limitation=_AUDIT_LIMITATION,
+    )
 
 
 def scaffold_contract(
@@ -200,6 +276,10 @@ def _resolve_contract_path(contract: str | Path, directory: str | Path) -> Path:
 
 def _has_settlement(text: str) -> bool:
     return re.search(r"(?m)^## Settlement$", text) is not None
+
+
+def _has_contract_id(text: str, contract_id: str) -> bool:
+    return f"- **ID**: `{contract_id}`" in text
 
 
 def _next_contract_number(contract_dir: Path) -> int:

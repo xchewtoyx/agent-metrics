@@ -20,6 +20,7 @@ here is load-bearing: it keeps the public surface predictable and prevents drift
 | `append_*` | Write a record to append-only JSONL. | `append_health_record` |
 | `scaffold_*` | Create a filesystem scaffold with deterministic naming and collision checks. | `scaffold_contract` |
 | `settle_*` | Record the final outcome for a previously scaffolded prediction without rewriting the prediction body. | `settle_contract` |
+| `audit_*` | Summarize existing evidence and return deterministic, machine-readable counts. | `audit_contracts` |
 | `to_*` | Pure transform/export to another representation. | `to_otel_attributes` |
 | `*_dedupe_key` | Return the identity tuple for a record type. | `structural_health_dedupe_key`, `effectiveness_dedupe_key` |
 | `detect_*` / `classify_*` / `resolve_*` | Internal derivations of a single field. **Keep out of `__all__`.** | `detect_environment`, `classify_durability`, `resolve_timestamp` |

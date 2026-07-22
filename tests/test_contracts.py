@@ -13,12 +13,78 @@ from agent_metrics.contracts import (
     ContractNameError,
     ContractNotFoundError,
     ContractVerdictError,
+    audit_contracts,
     scaffold_contract,
     settle_contract,
 )
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+
+def test_audit_contracts_reports_complete_contract_state(tmp_path: Path) -> None:
+    scaffold = scaffold_contract("Useful Change", directory=tmp_path)
+    settle_contract(
+        scaffold.contract_id,
+        directory=tmp_path,
+        verdict="KEEP",
+        evidence="Verification passed.",
+    )
+
+    report = audit_contracts(directory=tmp_path)
+
+    assert report.to_dict() == {
+        "contracts_dir": str(tmp_path / ".agent-metrics" / "contracts"),
+        "contract_files": 1,
+        "settled_contracts": 1,
+        "unsettled_contracts": 0,
+        "malformed_contract_files": 0,
+        "ignored_markdown_files": 0,
+        "limitation": (
+            "Audits .agent-metrics/contracts/*.md only; does not infer all git "
+            "changes."
+        ),
+    }
+
+
+def test_audit_contracts_reports_missing_contract_directory(tmp_path: Path) -> None:
+    report = audit_contracts(directory=tmp_path)
+
+    assert report.contract_files == 0
+    assert report.settled_contracts == 0
+    assert report.unsettled_contracts == 0
+    assert report.malformed_contract_files == 0
+    assert report.ignored_markdown_files == 0
+
+
+def test_audit_contracts_reports_unsettled_contract(tmp_path: Path) -> None:
+    scaffold_contract("Useful Change", directory=tmp_path)
+
+    report = audit_contracts(directory=tmp_path)
+
+    assert report.contract_files == 1
+    assert report.settled_contracts == 0
+    assert report.unsettled_contracts == 1
+
+
+def test_audit_contracts_reports_malformed_and_non_contract_markdown(
+    tmp_path: Path,
+) -> None:
+    contract_dir = tmp_path / ".agent-metrics" / "contracts"
+    contract_dir.mkdir(parents=True)
+    (contract_dir / "0001_missing_id.md").write_text(
+        "# Change Contract: 0001 - Missing ID\n",
+        encoding="utf-8",
+    )
+    (contract_dir / "notes.md").write_text("not a contract", encoding="utf-8")
+
+    report = audit_contracts(directory=tmp_path)
+
+    assert report.contract_files == 0
+    assert report.settled_contracts == 0
+    assert report.unsettled_contracts == 0
+    assert report.malformed_contract_files == 1
+    assert report.ignored_markdown_files == 1
 
 
 def test_scaffold_contract_creates_next_numbered_template(tmp_path: Path) -> None:

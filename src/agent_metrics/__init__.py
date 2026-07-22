@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from agent_metrics.contracts import (
+    ContractAudit,
     ContractScaffold,
     ContractSettlement,
+    audit_contracts,
     scaffold_contract,
     settle_contract,
 )
@@ -40,6 +42,7 @@ __all__ = [
     "ADVISORY",
     "AGENT_METRICS_NAMESPACE",
     "AgentMetricsError",
+    "ContractAudit",
     "ContractScaffold",
     "ContractSettlement",
     "DEFAULT_BUNDLE",
@@ -47,6 +50,7 @@ __all__ = [
     "EFFECTIVENESS_SCHEMA_VERSION",
     "STRUCTURAL_HEALTH_SCHEMA_VERSION",
     "append_health_record",
+    "audit_contracts",
     "build_effectiveness_envelope",
     "build_health_envelope",
     "build_provenance",
