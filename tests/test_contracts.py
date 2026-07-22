@@ -8,9 +8,13 @@ from typing import TYPE_CHECKING
 import pytest
 
 from agent_metrics.contracts import (
+    ContractAlreadySettledError,
     ContractCollisionError,
     ContractNameError,
+    ContractNotFoundError,
+    ContractVerdictError,
     scaffold_contract,
+    settle_contract,
 )
 
 if TYPE_CHECKING:
@@ -110,3 +114,103 @@ def test_scaffold_contract_ignores_non_contract_markdown_names(tmp_path: Path) -
     scaffold = scaffold_contract("Useful Change", directory=tmp_path)
 
     assert scaffold.path.name == "0001_useful_change.md"
+
+
+def test_settle_contract_appends_settlement_without_rewriting_body(
+    tmp_path: Path,
+) -> None:
+    scaffold = scaffold_contract(
+        "Useful Change",
+        directory=tmp_path,
+        created_on=date(2026, 7, 22),
+    )
+    original_text = scaffold.path.read_text(encoding="utf-8")
+
+    settlement = settle_contract(
+        scaffold.contract_id,
+        directory=tmp_path,
+        verdict="keep",
+        evidence="Narrow tests pass and the CLI records the settlement.",
+        settled_on=date(2026, 7, 23),
+    )
+
+    assert settlement.path == scaffold.path
+    assert settlement.contract_id == scaffold.contract_id
+    assert settlement.verdict == "KEEP"
+    assert (
+        settlement.evidence == "Narrow tests pass and the CLI records the settlement."
+    )
+
+    text = scaffold.path.read_text(encoding="utf-8")
+    assert text.startswith(original_text)
+    assert text.count("## Settlement") == 1
+    assert "- **Settled**: 2026-07-23" in text
+    assert "- **Verdict**: KEEP" in text
+    assert "### Evidence" in text
+    assert "Narrow tests pass and the CLI records the settlement." in text
+
+
+def test_settle_contract_accepts_contract_filename(tmp_path: Path) -> None:
+    scaffold = scaffold_contract("Useful Change", directory=tmp_path)
+
+    settlement = settle_contract(
+        scaffold.path.name,
+        directory=tmp_path,
+        verdict="IMPROVE",
+        evidence="Works, but future file input would help.",
+    )
+
+    assert settlement.path == scaffold.path
+    assert "- **Verdict**: IMPROVE" in scaffold.path.read_text(encoding="utf-8")
+
+
+def test_settle_contract_rejects_missing_contract(tmp_path: Path) -> None:
+    with pytest.raises(ContractNotFoundError, match="does not exist"):
+        settle_contract(
+            "0001_missing_contract",
+            directory=tmp_path,
+            verdict="KEEP",
+            evidence="No file exists.",
+        )
+
+
+def test_settle_contract_rejects_invalid_verdict(tmp_path: Path) -> None:
+    scaffold = scaffold_contract("Useful Change", directory=tmp_path)
+
+    with pytest.raises(ContractVerdictError, match="KEEP, IMPROVE, or ROLLBACK"):
+        settle_contract(
+            scaffold.contract_id,
+            directory=tmp_path,
+            verdict="MAYBE",
+            evidence="Ambiguous verdict.",
+        )
+
+
+def test_settle_contract_rejects_empty_evidence(tmp_path: Path) -> None:
+    scaffold = scaffold_contract("Useful Change", directory=tmp_path)
+
+    with pytest.raises(ContractVerdictError, match="evidence cannot be empty"):
+        settle_contract(
+            scaffold.contract_id,
+            directory=tmp_path,
+            verdict="KEEP",
+            evidence="   ",
+        )
+
+
+def test_settle_contract_rejects_repeat_settlement(tmp_path: Path) -> None:
+    scaffold = scaffold_contract("Useful Change", directory=tmp_path)
+    settle_contract(
+        scaffold.contract_id,
+        directory=tmp_path,
+        verdict="KEEP",
+        evidence="First settlement.",
+    )
+
+    with pytest.raises(ContractAlreadySettledError, match="already has"):
+        settle_contract(
+            scaffold.contract_id,
+            directory=tmp_path,
+            verdict="ROLLBACK",
+            evidence="Second settlement should not overwrite evidence.",
+        )

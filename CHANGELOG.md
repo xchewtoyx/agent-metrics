@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `agent-metrics settle`, which appends a settlement section to an existing
+  contract with validated `KEEP`, `IMPROVE`, or `ROLLBACK` verdicts and rejects
+  repeat settlement by default. Dogfooded as contract `0009_settle_command.md`.
 - `agent-metrics contract`, which scaffolds deterministic markdown pre-change
   contracts under `.agent-metrics/contracts/` with explicit invalid-name and
   collision failures. Dogfooded as contract `0008_contract_command.md`.

@@ -28,6 +28,18 @@ class ContractCollisionError(ContractError):
     """Raised when a requested contract name would collide with existing evidence."""
 
 
+class ContractNotFoundError(ContractError):
+    """Raised when a requested contract file does not exist."""
+
+
+class ContractAlreadySettledError(ContractError):
+    """Raised when a contract already has settlement evidence."""
+
+
+class ContractVerdictError(ContractError):
+    """Raised when a settlement verdict or evidence value is invalid."""
+
+
 @dataclass(frozen=True)
 class ContractScaffold:
     """Result of scaffolding a contract file."""
@@ -36,6 +48,16 @@ class ContractScaffold:
     contract_id: str
     number: int
     slug: str
+
+
+@dataclass(frozen=True)
+class ContractSettlement:
+    """Result of settling a contract file."""
+
+    path: Path
+    contract_id: str
+    verdict: str
+    evidence: str
 
 
 def scaffold_contract(
@@ -87,6 +109,51 @@ def scaffold_contract(
     )
 
 
+def settle_contract(
+    contract: str | Path,
+    *,
+    verdict: str,
+    evidence: str,
+    directory: str | Path = ".",
+    settled_on: date | None = None,
+) -> ContractSettlement:
+    """Append settlement evidence and a validated verdict to a contract.
+
+    ``contract`` may be a contract id (``NNNN_slug``), a contract filename, or
+    a path. Settlement is append-only: the original prediction body is preserved
+    and an existing settlement section is rejected by default.
+    """
+    contract_path = _resolve_contract_path(contract, directory)
+    clean_verdict = _normalize_verdict(verdict)
+    clean_evidence = evidence.strip()
+    if not clean_evidence:
+        raise ContractVerdictError("Settlement evidence cannot be empty.")
+
+    original_text = contract_path.read_text(encoding="utf-8")
+    if _has_settlement(original_text):
+        raise ContractAlreadySettledError(
+            f"Contract already has a settlement section: {contract_path}"
+        )
+
+    settlement_text = _render_settlement_section(
+        verdict=clean_verdict,
+        evidence=clean_evidence,
+        settled_on=settled_on or date.today(),
+    )
+    separator = "\n" if original_text.endswith("\n") else "\n\n"
+    contract_path.write_text(
+        f"{original_text}{separator}{settlement_text}",
+        encoding="utf-8",
+    )
+
+    return ContractSettlement(
+        path=contract_path,
+        contract_id=contract_path.stem,
+        verdict=clean_verdict,
+        evidence=clean_evidence,
+    )
+
+
 def _slugify(title: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
     slug = re.sub(r"_+", "_", slug)
@@ -101,6 +168,38 @@ def _normalize_slug(slug: str) -> str:
             "underscores only."
         )
     return clean_slug
+
+
+def _normalize_verdict(verdict: str) -> str:
+    clean_verdict = verdict.strip().upper()
+    if clean_verdict not in {"KEEP", "IMPROVE", "ROLLBACK"}:
+        raise ContractVerdictError(
+            "Settlement verdict must be one of KEEP, IMPROVE, or ROLLBACK."
+        )
+    return clean_verdict
+
+
+def _resolve_contract_path(contract: str | Path, directory: str | Path) -> Path:
+    raw_path = Path(contract)
+    if raw_path.suffix == ".md" and len(raw_path.parts) == 1:
+        path = Path(directory) / _CONTRACT_DIR / raw_path
+    elif raw_path.suffix == ".md" or len(raw_path.parts) > 1:
+        path = raw_path if raw_path.is_absolute() else Path(directory) / raw_path
+    else:
+        contract_id = raw_path.name
+        if not _CONTRACT_FILE_RE.fullmatch(f"{contract_id}.md"):
+            raise ContractNameError(
+                "Contract identifier must look like NNNN_lower_snake_slug."
+            )
+        path = Path(directory) / _CONTRACT_DIR / f"{contract_id}.md"
+
+    if not path.is_file():
+        raise ContractNotFoundError(f"Contract does not exist: {path}")
+    return path
+
+
+def _has_settlement(text: str) -> bool:
+    return re.search(r"(?m)^## Settlement$", text) is not None
 
 
 def _next_contract_number(contract_dir: Path) -> int:
@@ -180,4 +279,21 @@ load-bearing code.
 - **KEEP**: TODO
 - **IMPROVE**: TODO
 - **ROLLBACK**: TODO
+"""
+
+
+def _render_settlement_section(
+    *,
+    verdict: str,
+    evidence: str,
+    settled_on: date,
+) -> str:
+    return f"""## Settlement
+
+- **Settled**: {settled_on.isoformat()}
+- **Verdict**: {verdict}
+
+### Evidence
+
+{evidence}
 """
