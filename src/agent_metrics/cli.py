@@ -189,9 +189,36 @@ def settle(contract_ref: str, verdict: str, evidence: str, directory: str) -> No
 
 
 @main.command()
-def audit() -> None:
-    """Report whether contracts and settlements exist for relevant changes."""
-    _not_implemented("audit")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json"]),
+    default="json",
+    show_default=True,
+    help="Output format.",
+)
+@click.option(
+    "--directory",
+    "-C",
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+    show_default=True,
+    help="Repository root where .agent-metrics/contracts lives.",
+)
+def audit(output_format: str, directory: str) -> None:
+    """Report file-based contract and settlement counts as JSON."""
+    from agent_metrics.contracts import audit_contracts
+
+    report = audit_contracts(directory=directory)
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                report.to_dict(),
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+        )
 
 
 @main.command()

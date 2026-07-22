@@ -51,7 +51,7 @@ The first milestone is deliberately small:
 1. `agent-metrics health --append` records structural health as append-only JSONL.
 2. `agent-metrics contract "Title"` scaffolds a one-file pre-change prediction.
 3. `agent-metrics settle` records the outcome and verdict for a contract.
-4. `agent-metrics audit` reports how many harness changes had contracts and settled outcomes.
+4. `agent-metrics audit` reports file-based contract and settled-outcome counts.
 5. Session-end or CI checks run health snapshots in the first adopter repos.
 
 The project should dogfood its own rule: building this toolkit is itself a harness
@@ -102,8 +102,11 @@ also writes append-only JSONL under `.agent-metrics/health.jsonl`.
 `contract` requires a title and writes the next deterministic markdown scaffold under
 `.agent-metrics/contracts/`. `settle` appends a settlement section with a validated
 `KEEP`, `IMPROVE`, or `ROLLBACK` verdict and rejects repeat settlements by default.
-Later Stage One commands (`audit` and `roll`) are still honest stubs until their
-milestones land.
+`audit` prints deterministic JSON counts for contract files and settled outcomes.
+This first audit pass is intentionally file-based: it audits
+`.agent-metrics/contracts/*.md` only and does not infer every harness change from
+Git history. The remaining Stage One command (`roll`) is still an honest stub until
+its milestone lands.
 
 ## Development
 
@@ -127,7 +130,7 @@ pytest
 ```
 
 The test suite uses `pytest` with coverage enabled through `pyproject.toml`. Current
-tests cover the implemented `health`, `contract`, and `settle` commands,
+tests cover the implemented `health`, `contract`, `settle`, and `audit` commands,
 version/help output, clear failure for remaining unimplemented commands, and
 rejection of unknown commands.
 

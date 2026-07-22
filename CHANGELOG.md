@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `agent-metrics audit`, which reports deterministic JSON counts for contract
+  files, settled contracts, unsettled contracts, malformed contract markdown,
+  and ignored non-contract markdown. This first pass audits
+  `.agent-metrics/contracts/*.md` only rather than inferring all git changes.
+  Dogfooded as contract `0010_audit_command.md`.
 - `agent-metrics settle`, which appends a settlement section to an existing
   contract with validated `KEEP`, `IMPROVE`, or `ROLLBACK` verdicts and rejects
   repeat settlement by default. Dogfooded as contract `0009_settle_command.md`.

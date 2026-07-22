@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from click.testing import CliRunner
 
@@ -21,7 +23,7 @@ def test_version_uses_project_name() -> None:
     assert result.output.startswith("agent-metrics, version ")
 
 
-@pytest.mark.parametrize("command", ["audit", "roll"])
+@pytest.mark.parametrize("command", ["roll"])
 def test_skeleton_command_fails_clearly(command: str) -> None:
     """Negative case: command stubs must fail honestly until implemented."""
     args = [command]
@@ -30,6 +32,52 @@ def test_skeleton_command_fails_clearly(command: str) -> None:
 
     assert result.exit_code != 0
     assert "not implemented yet" in result.output
+
+
+def test_audit_command_reports_contract_counts_as_json(tmp_path) -> None:
+    runner = CliRunner()
+    contract_result = runner.invoke(
+        main,
+        ["contract", "--directory", str(tmp_path), "Measure Harness Drift"],
+    )
+    settle_result = runner.invoke(
+        main,
+        [
+            "settle",
+            "--directory",
+            str(tmp_path),
+            "--verdict",
+            "KEEP",
+            "--evidence",
+            "Narrow tests passed.",
+            "0001_measure_harness_drift",
+        ],
+    )
+
+    result = runner.invoke(main, ["audit", "--directory", str(tmp_path)])
+
+    assert contract_result.exit_code == 0
+    assert settle_result.exit_code == 0
+    assert result.exit_code == 0
+    assert json.loads(result.output) == {
+        "contracts_dir": str(tmp_path / ".agent-metrics" / "contracts"),
+        "contract_files": 1,
+        "settled_contracts": 1,
+        "unsettled_contracts": 0,
+        "malformed_contract_files": 0,
+        "ignored_markdown_files": 0,
+        "limitation": (
+            "Audits .agent-metrics/contracts/*.md only; does not infer all git "
+            "changes."
+        ),
+    }
+
+
+def test_audit_command_reports_missing_contract_directory(tmp_path) -> None:
+    result = CliRunner().invoke(main, ["audit", "--directory", str(tmp_path)])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output)["contract_files"] == 0
 
 
 def test_contract_command_scaffolds_file(tmp_path) -> None:
