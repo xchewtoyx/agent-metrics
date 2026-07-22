@@ -148,9 +148,44 @@ def contract(title: str, slug: str | None, number: int | None, directory: str) -
 
 
 @main.command()
-def settle() -> None:
+@click.option(
+    "--verdict",
+    "verdict",
+    required=True,
+    help="Settlement verdict: KEEP, IMPROVE, or ROLLBACK.",
+)
+@click.option(
+    "--evidence",
+    "evidence",
+    required=True,
+    help="Evidence summary supporting the settlement verdict.",
+)
+@click.option(
+    "--directory",
+    "-C",
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+    show_default=True,
+    help="Repository root where .agent-metrics/contracts lives.",
+)
+@click.argument("contract_ref")
+def settle(contract_ref: str, verdict: str, evidence: str, directory: str) -> None:
     """Settle a change contract with evidence and a verdict."""
-    _not_implemented("settle")
+    from agent_metrics.contracts import settle_contract
+    from agent_metrics.errors import AgentMetricsError
+
+    try:
+        settlement = settle_contract(
+            contract_ref,
+            verdict=verdict,
+            evidence=evidence,
+            directory=directory,
+        )
+    except AgentMetricsError as e:
+        raise click.ClickException(f"Invalid settlement input: {e}") from e
+
+    click.echo(str(settlement.path))
 
 
 @main.command()

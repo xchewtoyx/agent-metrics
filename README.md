@@ -91,7 +91,7 @@ contracts or outcomes, `audit` should make that visible.
 ```text
 agent-metrics health --append --metric concepts=128 .
 agent-metrics contract "Measure harness drift"
-agent-metrics settle
+agent-metrics settle 0001_measure_harness_drift --verdict KEEP --evidence "Checks passed."
 agent-metrics audit
 agent-metrics roll
 ```
@@ -100,8 +100,10 @@ agent-metrics roll
 also writes append-only JSONL under `.agent-metrics/health.jsonl`.
 
 `contract` requires a title and writes the next deterministic markdown scaffold under
-`.agent-metrics/contracts/`. Later Stage One commands (`settle`, `audit`, and `roll`)
-are still honest stubs until their milestones land.
+`.agent-metrics/contracts/`. `settle` appends a settlement section with a validated
+`KEEP`, `IMPROVE`, or `ROLLBACK` verdict and rejects repeat settlements by default.
+Later Stage One commands (`audit` and `roll`) are still honest stubs until their
+milestones land.
 
 ## Development
 
@@ -125,8 +127,9 @@ pytest
 ```
 
 The test suite uses `pytest` with coverage enabled through `pyproject.toml`. Current
-tests cover the implemented `health` and `contract` commands, version/help output,
-clear failure for remaining unimplemented commands, and rejection of unknown commands.
+tests cover the implemented `health`, `contract`, and `settle` commands,
+version/help output, clear failure for remaining unimplemented commands, and
+rejection of unknown commands.
 
 Formatting is handled by Black. Linting is handled by Ruff, including McCabe complexity
 checks, so new implementation should stay simple before it gets broad.
