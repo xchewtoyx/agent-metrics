@@ -179,3 +179,24 @@ Fields with a `None` value (for example `commit` outside a git checkout) are
 omitted from the attribute set. Any future field that is not in the mapping table
 is exported under `agent_metrics.*` automatically, so new concepts stay
 namespace-safe by default.
+
+### Why align: standard sidecars over bespoke integrations
+
+Integrating specific telemetry backends is deliberately **out of scope**.
+agent-metrics writes plain JSONL and stops there — it does not ship, poll, or
+push to any observability API. That keeps the tool small and its evidence
+portable.
+
+Standard alignment is what lets that scope hold without foreclosing publication
+or analysis. Because the export boundary speaks OpenTelemetry semantic
+conventions, an adopter who wants dashboards, alerting, or long-term storage can
+point a standard, off-the-shelf collector — Grafana Alloy, the OpenTelemetry
+Collector, or any OTLP-speaking agent — at the output as a **sidecar**, rather
+than each adopter writing a bespoke local integration against a particular
+vendor. The common standard is the seam: it moves backend integration out of
+this codebase and into commodity, reusable infrastructure.
+
+Keep this in mind when adding or changing outputs. Prefer shapes and attribute
+names that a standard sidecar can consume unmodified over anything that would
+require custom glue on the consumer side — the value of not integrating a
+backend depends on the output staying standard enough that a sidecar can.
