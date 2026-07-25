@@ -30,3 +30,24 @@ jobs:
 
       - name: Test
         run: pytest
+
+      - name: Record health snapshot
+        run: |
+          python - <<'PY' > /tmp/agent-metrics-ci-health.json
+          import json
+          from pathlib import Path
+
+          metrics = {
+              "contract_files": len(list(Path(".agent-metrics/contracts").glob("*.md"))),
+              "pytest_passed": 1,
+          }
+          print(json.dumps(metrics, sort_keys=True))
+          PY
+          agent-metrics health --append --input-file /tmp/agent-metrics-ci-health.json --bundle agent-metrics-ci .
+
+      - name: Upload health snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-metrics-health
+          path: .agent-metrics/health.jsonl
+          if-no-files-found: error

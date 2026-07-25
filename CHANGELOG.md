@@ -8,6 +8,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- The existing GitHub Actions test workflow now dogfoods `agent-metrics health
+  --append` with a small deterministic CI metric set and uploads
+  `.agent-metrics/health.jsonl` as an inspectable `agent-metrics-health`
+  artifact instead of committing generated records. Dogfooded as contract
+  `0011_ci_health_snapshot.md`.
+- `agent-metrics audit`, which reports deterministic JSON counts for contract
+  files, settled contracts, unsettled contracts, malformed contract markdown,
+  and ignored non-contract markdown. This first pass audits
+  `.agent-metrics/contracts/*.md` only rather than inferring all git changes.
+  Dogfooded as contract `0010_audit_command.md`.
+- `agent-metrics settle`, which appends a settlement section to an existing
+  contract with validated `KEEP`, `IMPROVE`, or `ROLLBACK` verdicts and rejects
+  repeat settlement by default. Dogfooded as contract `0009_settle_command.md`.
+- `agent-metrics contract`, which scaffolds deterministic markdown pre-change
+  contracts under `.agent-metrics/contracts/` with explicit invalid-name and
+  collision failures. Dogfooded as contract `0008_contract_command.md`.
+- `ContractScaffold` from the package root, matching the public return type of
+  `scaffold_contract`.
 - Contract/invariant test suite (`tests/test_invariants.py`) that asserts documented guarantees rather than chasing coverage: single-source version (and no hard-coded version literal in `src/`), graceful degradation across the whole `OSError`/`SubprocessError` family, strict/deterministic JSON round-trip, the documented envelope shape, that `__all__` and documented public verbs stay in sync, that api-conventions symbol references resolve, and that the `schemas.md` example records stay valid.
 - `scripts/review.py`, a pre-review self-check that runs the mechanizable gates (`black`/`ruff`/`pytest`) and prints the non-mechanizable checklist reminders.
 - Encoded recurring review findings into the harness: `docs/review-checklist.md` and `docs/api-conventions.md` now cover catching base exceptions for degrade-gracefully functions, single-source derived defaults, prose-accuracy, rename reference-grep, and that documented guarantees are tested (coverage alone is not the bar). Dogfooded as contract `0007_review_retro_guardrails.md`.

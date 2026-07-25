@@ -106,21 +106,119 @@ def health(
 
 
 @main.command()
-def contract() -> None:
+@click.option(
+    "--slug",
+    "slug",
+    default=None,
+    help="Explicit lower_snake_case filename slug. Defaults to the title slug.",
+)
+@click.option(
+    "--number",
+    "number",
+    type=click.IntRange(1, 9999),
+    default=None,
+    help="Explicit four-digit contract number. Defaults to the next number.",
+)
+@click.option(
+    "--directory",
+    "-C",
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+    show_default=True,
+    help="Repository root where .agent-metrics/contracts lives.",
+)
+@click.argument("title")
+def contract(title: str, slug: str | None, number: int | None, directory: str) -> None:
     """Scaffold a pre-change prediction for load-bearing edits."""
-    _not_implemented("contract")
+    from agent_metrics.contracts import scaffold_contract
+    from agent_metrics.errors import AgentMetricsError
+
+    try:
+        scaffold = scaffold_contract(
+            title=title,
+            directory=directory,
+            slug=slug,
+            number=number,
+        )
+    except AgentMetricsError as e:
+        raise click.ClickException(f"Invalid contract input: {e}") from e
+
+    click.echo(str(scaffold.path))
 
 
 @main.command()
-def settle() -> None:
+@click.option(
+    "--verdict",
+    "verdict",
+    required=True,
+    help="Settlement verdict: KEEP, IMPROVE, or ROLLBACK.",
+)
+@click.option(
+    "--evidence",
+    "evidence",
+    required=True,
+    help="Evidence summary supporting the settlement verdict.",
+)
+@click.option(
+    "--directory",
+    "-C",
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+    show_default=True,
+    help="Repository root where .agent-metrics/contracts lives.",
+)
+@click.argument("contract_ref")
+def settle(contract_ref: str, verdict: str, evidence: str, directory: str) -> None:
     """Settle a change contract with evidence and a verdict."""
-    _not_implemented("settle")
+    from agent_metrics.contracts import settle_contract
+    from agent_metrics.errors import AgentMetricsError
+
+    try:
+        settlement = settle_contract(
+            contract_ref,
+            verdict=verdict,
+            evidence=evidence,
+            directory=directory,
+        )
+    except AgentMetricsError as e:
+        raise click.ClickException(f"Invalid settlement input: {e}") from e
+
+    click.echo(str(settlement.path))
 
 
 @main.command()
-def audit() -> None:
-    """Report whether contracts and settlements exist for relevant changes."""
-    _not_implemented("audit")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["json"]),
+    default="json",
+    show_default=True,
+    help="Output format.",
+)
+@click.option(
+    "--directory",
+    "-C",
+    "directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    default=".",
+    show_default=True,
+    help="Repository root where .agent-metrics/contracts lives.",
+)
+def audit(output_format: str, directory: str) -> None:
+    """Report file-based contract and settlement counts as JSON."""
+    from agent_metrics.contracts import audit_contracts
+
+    report = audit_contracts(directory=directory)
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                report.to_dict(),
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+        )
 
 
 @main.command()
