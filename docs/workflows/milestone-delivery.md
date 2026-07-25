@@ -16,6 +16,12 @@ currently-open issues from scratch. If the milestone doesn't resolve to an
 existing GitHub milestone, stop and ask — don't guess or silently fall back
 to a label or issue list.
 
+**Tooling note (GitHub MCP):** a generic issue-listing call can silently omit
+the `milestone` field even when every issue has one — it did on this repo's
+first pass. Confirm with a call that's known to surface `milestone` (e.g. a
+search scoped with `milestone:"<title>"`, or reading one issue directly)
+before concluding a milestone has no issues or doesn't exist.
+
 ## Thinness constraint
 
 The supervisor is thin: it dispatches the four roles and reads only their
@@ -43,8 +49,10 @@ report, not discovered later from a cost or context overrun.
 
 ## Loop (one issue, end to end)
 
-1. **Query.** Re-fetch the milestone's open issues from the tracker. If
-   none remain, the milestone is done — report and stop.
+1. **Query.** Re-fetch the milestone's open issues from the tracker (e.g.
+   `search_issues` with `milestone:"<title>" is:open`, not a generic
+   unfiltered issue list — see the tooling note above). If none remain, the
+   milestone is done — report and stop.
 2. **Select.** Pick exactly one issue (lowest number, or the tracker's
    default order). Work it end-to-end before touching another.
 3. **Branch.** Ensure a fresh branch exists for this issue
