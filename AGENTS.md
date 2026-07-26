@@ -52,6 +52,60 @@ For a load-bearing harness or knowledge change, follow this loop:
 - **Explicit Interfaces:** Public API functions must use Python type hints, document their behavior clearly with docstrings, and return standard structures (like dictionaries, lists, or dataclasses) rather than relying on mutable global states or CLI-specific constructs.
 - **Decoupled Exception Hierarchy:** Raise custom exception classes inheriting from a base library exception (like `AgentMetricsError`) for expected domain-level validation and runtime failures. Decouple error raising from CLI presentation by letting the CLI layer map these custom exceptions to user-facing messages.
 
+## Testing Standard
+
+- **Decompose tests.** One behavior per test function. A test name that
+  needs "and" to describe it is a signal to split it.
+- **Negative paths are mandatory.** Every new branch, guard, or validation
+  path needs a test that proves it rejects bad input clearly — not just a
+  test that proves the happy path works. See [docs/review-checklist.md](docs/review-checklist.md).
+- **Parametrize input families.** Use `pytest.mark.parametrize` for a family
+  of similar inputs instead of copy-pasted near-duplicate test functions;
+  keep parametrize IDs readable.
+- **Assert guarantees, not just coverage.** 100% line coverage is necessary
+  but not sufficient — every defect found in review so far shipped with full
+  coverage. Documented guarantees (never raises, graceful degradation,
+  determinism, single-source version) get a test that pins the guarantee.
+  See [tests/test_invariants.py](tests/test_invariants.py).
+
+## Complexity & Quality Budget
+
+- **Cyclomatic complexity ceiling.** `ruff`'s `C90` rule enforces
+  `max-complexity = 8` (see `pyproject.toml`). A function that hits the
+  ceiling gets decomposed into smaller, named functions — it does not get a
+  `# noqa`.
+- **Thin CLI/handler layers.** `cli.py` stays a thin argument/option parsing
+  and presentation layer; all branching and business logic lives in library
+  modules under `src/agent_metrics/` (see Project Layout, below).
+- **A comment introducing a block is a function name in disguise.** If a
+  comment exists to narrate what a chunk of code is about to do ("# now
+  validate the input", "# build the envelope"), extract that chunk into a
+  well-named helper instead of narrating it in place.
+
+## Docs Updated in the Same Commit
+
+Any user-facing or behavior change — a new or changed CLI option, a public
+API addition, a JSONL schema change, a new error type — updates its doc in
+the *same* commit: the relevant `docs/*.md` page, `README.md` if it affects
+usage or install, and `CHANGELOG.md`'s `[Unreleased]` section (see below). A
+PR that changes behavior without a matching docs diff fails review.
+
+## Delivery Rules
+
+- **One issue, one fresh branch, one PR.** Branch from the latest `main`;
+  never reuse a branch across issues.
+- **PRs only.** Nothing lands on `main` by direct push.
+- **No agent self-merge.** An agent (including the milestone-delivery
+  supervisor) opens and updates PRs but never merges its own PR — merging is
+  always a human action.
+- **No force-push.** Push follow-up commits; do not rewrite history on an
+  open PR.
+- **Reference the issue.** A PR's description includes `Closes #N` for the
+  issue it resolves, and follows the repo's PR template if one exists (none
+  as of this writing — until one is added, use a Summary / Test plan shape
+  consistent with [docs/review-checklist.md](docs/review-checklist.md)'s
+  gates).
+
 ## Local Workflow
 
 Prefer creating a project-local virtual environment at `.venv/`:
@@ -95,6 +149,15 @@ and is loaded on demand:
 - [docs/review-checklist.md](docs/review-checklist.md) — repo-specific review gates.
 - [docs/releasing.md](docs/releasing.md) — versioning policy and the tag/release/publish flow.
 - `.agent-metrics/contracts/` — change contracts and their settle records.
+- [docs/agents/](docs/agents/) — the four narrow milestone-delivery roles
+  (`planner`, `implementor`, `reviewer`, `approver`): inputs, constraints,
+  and exact output shape for each.
+- [docs/workflows/milestone-delivery.md](docs/workflows/milestone-delivery.md)
+  — the supervisor loop that drives a GitHub milestone's issues through
+  plan → implement → review → approve → PR → human merge, one at a time.
+  Platform-specific stubs (`.claude/`, `.cursor/`, `.github/copilot-instructions.md`,
+  `CLAUDE.md`) all defer to this file and to `docs/agents/`; edit those, not
+  the stubs, when the loop's behavior changes.
 
 When adding guidance, prefer a new or existing `docs/` page linked here over
 growing this file.

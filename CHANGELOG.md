@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Milestone-delivery loop scaffolding: four narrow subagent role specs
+  (`planner`, `implementor`, `reviewer`, `approver`) under
+  [docs/agents/](docs/agents/), and a supervisor operating spec at
+  [docs/workflows/milestone-delivery.md](docs/workflows/milestone-delivery.md)
+  covering the plan → implement → review → approve → PR → human-merge loop,
+  round-capped retry with early escalation on recurring bug classes,
+  finding-batching, and backoff-polling for merge state. Wired into Claude
+  Code via thin `.claude/agents/*.md` and `.claude/skills/milestone-delivery/`
+  stubs that defer to the canonical docs, plus minimal cross-platform
+  pointers (`CLAUDE.md`, `.cursor/rules/agents.mdc`,
+  `.github/copilot-instructions.md`) so other agent tooling can find the same
+  conventions natively. Codex CLI needs no stub — it already reads
+  `AGENTS.md` at the repo root. Dogfooded as contract
+  `0012_milestone_delivery_loop_scaffolding.md`.
+- Extended [AGENTS.md](AGENTS.md) with an explicit Testing Standard
+  (decomposed tests, mandatory negative-path coverage, parametrization),
+  Complexity & Quality Budget (the existing `ruff` `C90` ceiling, thin
+  CLI/handler layers, "a comment introducing a block is a function name in
+  disguise"), a Docs Updated in the Same Commit rule, and Delivery Rules
+  (PRs only, no agent self-merge, fresh branch per issue, no force-push).
 - The existing GitHub Actions test workflow now dogfoods `agent-metrics health
   --append` with a small deterministic CI metric set and uploads
   `.agent-metrics/health.jsonl` as an inspectable `agent-metrics-health`
