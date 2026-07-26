@@ -7,6 +7,12 @@ agent harnesses and knowledge repos actually help. The goal is robust, efficient
 minimal evidence collection: plain files first, clear provenance, explicit contracts,
 and settled outcomes.
 
+Integrating specific telemetry backends is out of scope — we write plain JSONL and stop
+there. Keep outputs aligned to a common standard (OpenTelemetry semantic conventions) so
+adopters can publish and analyze them with a standard sidecar (e.g. Grafana Alloy) rather
+than bespoke local integrations. The rationale and export mapping live in
+[docs/schemas.md](docs/schemas.md#why-align-standard-sidecars-over-bespoke-integrations).
+
 ## Engineering Principles
 
 - Prefer batteries over bespoke machinery. Use proven libraries and standard Python
